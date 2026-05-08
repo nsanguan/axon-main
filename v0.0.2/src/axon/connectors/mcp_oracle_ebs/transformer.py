@@ -1,4 +1,5 @@
-"""Oracle EBS SemanticTransformer — maps MCPToolOutput → Domain models.
+"""
+Oracle EBS SemanticTransformer — maps MCPToolOutput → Domain models.
 
 Converts raw MCP responses from mcp-oracle-ebs into Axon core schema types
 (Demand, Supply, Allocation). This is the bridge between ERP-native data
@@ -28,7 +29,10 @@ from axon.core.schema import (
 
 
 class OracleEBSTransformer(SemanticTransformer):
-    """Transforms Oracle EBS MCP tool outputs into Axon domain models."""
+    """Transforms Oracle EBS MCP tool outputs into Axon domain models.
+
+    Handles the full Oracle EBS tool surface (legacy/composite).
+    """
 
     source_system: ClassVar[str] = "oracle_ebs"
     supported_tools: ClassVar[list[str]] = [
@@ -244,3 +248,45 @@ class OracleEBSTransformer(SemanticTransformer):
             "get_shipments": "in_transit",
         }
         return row.get("source", row.get("source_type", source_map.get(tool_name, "planned")))
+
+
+class BuyerTransformer(OracleEBSTransformer):
+    """Transforms MCP outputs from the BuyerAgent sub-agent.
+
+    Handles procurement tools: suppliers, POs, costs, requisitions.
+    Reuses all transformation logic from OracleEBSTransformer.
+    """
+
+    source_system: ClassVar[str] = "mcp_agent_buyer"
+    supported_tools: ClassVar[list[str]] = [
+        "get_suppliers",
+        "get_item_costs",
+        "get_purchase_orders",
+        "get_supplier_performance",
+        "create_purchase_requisition",
+    ]
+
+
+class StoreTransformer(OracleEBSTransformer):
+    """Transforms MCP outputs from the StoreAgent sub-agent.
+
+    Handles inventory/warehouse tools: stock levels, ATP, orders,
+    forecasts, shipments, warehouse management.
+    Reuses all transformation logic from OracleEBSTransformer.
+    """
+
+    source_system: ClassVar[str] = "mcp_agent_store"
+    supported_tools: ClassVar[list[str]] = [
+        "get_inventory_levels",
+        "get_available_to_promise",
+        "get_sales_orders",
+        "get_demand_forecast",
+        "get_safety_stock",
+        "get_storage_capacity",
+        "get_inventory_aging",
+        "get_shipments",
+        "get_carrier_rates",
+        "get_transit_times",
+        "get_delivery_constraints",
+        "create_shipment",
+    ]

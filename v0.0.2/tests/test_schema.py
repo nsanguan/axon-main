@@ -329,6 +329,8 @@ class TestConfig:
         from axon.core.config import settings
 
         assert settings.mcp_oracle_ebs is not None
+        assert settings.mcp_agent_buyer is not None
+        assert settings.mcp_agent_store is not None
         assert settings.mcp_sap is not None
         assert settings.mcp_odoo is not None
         assert settings.mcp_external_rag is not None

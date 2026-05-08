@@ -33,39 +33,43 @@ class ToolSpec:
 # ---------------------------------------------------------------------------
 
 TOOL_CATALOG: list[ToolSpec] = [
-    # ── Sales (5 READ tools) ──────────────────────────────────────
+    # ── Sales (5 READ tools) — via mcp_agent_store (inventory/demand) ─
     ToolSpec(
         name="get_available_to_promise",
         description="Return ATP (Available to Promise) quantity for an item across a date range.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["sales"],
     ),
     ToolSpec(
         name="get_inventory_levels",
         description="Return on-hand, reserved, and available inventory for items at a location.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["sales", "production", "warehouse"],
     ),
     ToolSpec(
         name="get_sales_orders",
         description="List open sales orders with item, quantity, customer, date, and priority.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["sales"],
     ),
     ToolSpec(
         name="get_demand_forecast",
-        description="Return statistical or manual forecast for items by period with confidence level.",
-        server="oracle_ebs",
+        description=(
+            "Return statistical or manual forecast for items by period with confidence level."
+        ),
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["sales"],
     ),
     ToolSpec(
         name="get_shipments",
-        description="List planned and in-transit shipments with origin, destination, items, and ETA.",
-        server="oracle_ebs",
+        description=(
+            "List planned and in-transit shipments with origin, destination, items, and ETA."
+        ),
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["sales", "logistics", "warehouse"],
     ),
@@ -106,105 +110,111 @@ TOOL_CATALOG: list[ToolSpec] = [
         agent_ids=["production"],
         hitl_condition="shift >= 7 days",
     ),
-    # ── Procurement (5 READ + 1 WRITE) ─────────────────────────────
+    # ── Procurement (5 READ + 1 WRITE) — via mcp_agent_buyer (purchasing) ─
     ToolSpec(
         name="get_suppliers",
         description="Return approved supplier list for an item with lead times, pricing, and MOQ.",
-        server="oracle_ebs",
+        server="mcp_agent_buyer",
         direction="READ",
         agent_ids=["procurement"],
     ),
     ToolSpec(
         name="get_item_costs",
         description="Return standard and last actual cost for items.",
-        server="oracle_ebs",
+        server="mcp_agent_buyer",
         direction="READ",
         agent_ids=["procurement", "finance"],
     ),
     ToolSpec(
         name="get_purchase_orders",
         description="List open POs with item, quantity, supplier, due date, and status.",
-        server="oracle_ebs",
+        server="mcp_agent_buyer",
         direction="READ",
         agent_ids=["procurement"],
     ),
     ToolSpec(
         name="get_supplier_performance",
-        description="Return on-time delivery %, quality score, and lead time variance per supplier.",
-        server="oracle_ebs",
+        description=(
+            "Return on-time delivery %, quality score, and lead time variance per supplier."
+        ),
+        server="mcp_agent_buyer",
         direction="READ",
         agent_ids=["procurement"],
     ),
     ToolSpec(
         name="create_purchase_requisition",
         description="Create a purchase requisition. HITL required if amount > threshold.",
-        server="oracle_ebs",
+        server="mcp_agent_buyer",
         direction="WRITE",
         agent_ids=["procurement"],
         hitl_condition="amount > $10k",
     ),
-    # ── Warehouse (4 READ) ─────────────────────────────────────────
+    # ── Warehouse (4 READ) — via mcp_agent_store (inventory/warehouse) ─
     ToolSpec(
         name="get_inventory_levels",
         description="Return on-hand, reserved, and available inventory per item × location.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["warehouse", "sales", "production"],
     ),
     ToolSpec(
         name="get_safety_stock",
         description="Return safety stock targets per item × location.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["warehouse"],
     ),
     ToolSpec(
         name="get_storage_capacity",
         description="Return total and available storage capacity (pallet/volume) per warehouse.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["warehouse"],
     ),
     ToolSpec(
         name="get_inventory_aging",
         description="Return inventory aging breakdown (FIFO layers) for items.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["warehouse"],
     ),
-    # ── Logistics (4 READ + 1 WRITE) ───────────────────────────────
+    # ── Logistics (4 READ + 1 WRITE) — via mcp_agent_store (shipments) ─
     ToolSpec(
         name="get_shipments",
-        description="List planned and in-transit shipments with origin, destination, items, and ETA.",
-        server="oracle_ebs",
+        description=(
+            "List planned and in-transit shipments with origin, destination, items, and ETA."
+        ),
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["logistics", "sales", "warehouse"],
     ),
     ToolSpec(
         name="get_carrier_rates",
         description="Return carrier rate cards by lane, weight, and service level.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["logistics"],
     ),
     ToolSpec(
         name="get_transit_times",
         description="Return standard transit time (days) per lane and service level.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["logistics"],
     ),
     ToolSpec(
         name="get_delivery_constraints",
-        description="Return customer delivery windows, dock constraints, and appointment requirements.",
-        server="oracle_ebs",
+        description=(
+            "Return customer delivery windows, dock constraints, and appointment requirements."
+        ),
+        server="mcp_agent_store",
         direction="READ",
         agent_ids=["logistics"],
     ),
     ToolSpec(
         name="create_shipment",
         description="Create a shipment record. HITL required for expedited shipments.",
-        server="oracle_ebs",
+        server="mcp_agent_store",
         direction="WRITE",
         agent_ids=["logistics"],
         hitl_condition="expedited shipment",
@@ -226,7 +236,9 @@ TOOL_CATALOG: list[ToolSpec] = [
     ),
     ToolSpec(
         name="get_gl_accounts",
-        description="Return chart of accounts relevant to supply chain (COGS, inventory, variance).",
+        description=(
+            "Return chart of accounts relevant to supply chain (COGS, inventory, variance)."
+        ),
         server="oracle_ebs",
         direction="READ",
         agent_ids=["finance"],
@@ -267,7 +279,7 @@ TOOL_CATALOG: list[ToolSpec] = [
         direction="READ",
         agent_ids=["qa"],
     ),
-    # ── QC (4 READ + 1 WRITE) ──────────────────────────────────────
+    # ── QC (4 READ + 1 WRITE) — inspection tools stay on oracle_ebs ─
     ToolSpec(
         name="get_inspection_plan",
         description="Return inspection plan (sampling, criteria) for an item/lot.",

@@ -114,6 +114,8 @@ class Settings(BaseSettings):
 
     # MCP Servers
     mcp_oracle_ebs: MCPServerConfig = MCPServerConfig()
+    mcp_agent_buyer: MCPServerConfig = MCPServerConfig()  # buyer sub-agent under oracle_ebs
+    mcp_agent_store: MCPServerConfig = MCPServerConfig()  # store sub-agent under oracle_ebs
     mcp_sap: MCPServerConfig = MCPServerConfig()
     mcp_odoo: MCPServerConfig = MCPServerConfig()
     mcp_external_rag: MCPServerConfig = MCPServerConfig()

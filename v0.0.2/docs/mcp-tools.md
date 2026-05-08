@@ -21,6 +21,8 @@ them to the correct server at call time via `SemanticTransformer.can_handle()`.
 | Server ID | Description | Axon connector (client only) |
 |-----------|-------------|------------------------------|
 | `oracle_ebs` | mcp-oracle-ebs — separate project (inventory, WIP, orders, suppliers) | `src/axon/connectors/mcp_oracle_ebs/` |
+| `mcp_agent_buyer` | BuyerAgent — procurement sub-agent of oracle_ebs (suppliers, POs, costs, requisitions) | `src/axon/connectors/mcp_oracle_ebs/mcp_agent_buyer.py` |
+| `mcp_agent_store` | StoreAgent — inventory/warehouse sub-agent of oracle_ebs (stock levels, ATP, orders, shipments) | `src/axon/connectors/mcp_oracle_ebs/mcp_agent_store.py` |
 | `sap` | mcp-sap — separate project (production orders, MRP, finance) | `src/axon/connectors/mcp_sap/` |
 | `odoo` | mcp-odoo — separate project (alternative ERP) | `src/axon/connectors/mcp_odoo/` |
 | `external_rag` | mcp-policy-server (port 8021) — separate project (SOPs, policies, compliance) | `src/axon/connectors/mcp_external_rag/` |
@@ -37,21 +39,21 @@ them to the correct server at call time via `SemanticTransformer.can_handle()`.
 ## Agent × Tool Matrix
 
 ```
-                     oracle_ebs                              external_rag
-Agent      ┌──────────────────────────────────────┐    ┌──────────────────┐
-           │ inv  wip  bom  supp  cost  po  ship │    │ sop  compliance   │
-───────────┼──────────────────────────────────────┼────┼──────────────────┤
-Sales      │  ●    ·    ·    ·     ·    ·    ·    │    │  ·       ·        │
-Production │  ●    ●    ●    ·     ·    ·    ·    │    │  ·       ·        │
-Procurement│  ·    ·    ·    ●     ●    ●    ·    │    │  ·       ·        │
-Warehouse  │  ●    ·    ·    ·     ·    ·    ·    │    │  ·       ·        │
-Logistics  │  ·    ·    ·    ·     ·    ·    ●    │    │  ·       ·        │
-Finance    │  ·    ·    ·    ·     ●    ·    ·    │    │  ·       ·        │
-QA         │  ·    ·    ·    ·     ·    ·    ·    │    │  ●       ●        │
-QC         │  ·    ●    ·    ·     ·    ·    ·    │    │  ●       ●        │
-PD         │  ·    ·    ●    ·     ·    ·    ·    │    │  ●       ·        │
-Maintenance│  ·    ●    ·    ·     ·    ·    ·    │    │  ●       ·        │
-───────────┴──────────────────────────────────────┴────┴──────────────────┘
+                     oracle_ebs          mcp_agent_buyer   mcp_agent_store    external_rag
+Agent      ┌──────────────────────┐    ┌────────────────┐┌───────────────┐ ┌──────────────────┐
+           │ wip  bom  insp  mfg  │    │ supp cost po   ││ inv atp ship  │ │ sop  compliance   │
+───────────┼──────────────────────┼────┼────────────────┼┼───────────────┼─┼──────────────────┤
+Sales      │  ·    ·    ·    ·   │    │  ·    ·   ·    ││  ●    ●   ●   │ │  ·       ·        │
+Production │  ●    ●    ·    ·   │    │  ·    ·   ·    ││  ●    ·   ·   │ │  ·       ·        │
+Procurement│  ·    ·    ·    ·   │    │  ●    ●   ●    ││  ·    ·   ·   │ │  ·       ·        │
+Warehouse  │  ·    ·    ·    ·   │    │  ·    ·   ·    ││  ●    ·   ·   │ │  ·       ·        │
+Logistics  │  ·    ·    ·    ·   │    │  ·    ·   ·    ││  ·    ·   ●   │ │  ·       ·        │
+Finance    │  ·    ·    ·    ·   │    │  ·    ●   ·    ││  ·    ·   ·   │ │  ·       ·        │
+QA         │  ·    ·    ·    ·   │    │  ·    ·   ·    ││  ·    ·   ·   │ │  ●       ●        │
+QC         │  ·    ·    ●    ·   │    │  ·    ·   ·    ││  ·    ·   ·   │ │  ●       ●        │
+PD         │  ·    ●    ·    ·   │    │  ·    ·   ·    ││  ·    ·   ·   │ │  ●       ·        │
+Maintenance│  ·    ·    ·    ●   │    │  ·    ·   ·    ││  ·    ·   ·   │ │  ●       ·        │
+───────────┴──────────────────────┴────┴────────────────┴┴───────────────┴─┴──────────────────┘
 ● = tool assigned   · = not assigned
 ```
 
@@ -65,10 +67,10 @@ Maintenance│  ·    ●    ·    ·     ·    ·    ·    │    │  ●     
 
 | Tool | Server | Dir | Description |
 |------|--------|-----|-------------|
-| `get_available_to_promise` | `oracle_ebs` | READ | Return ATP quantity and earliest availability date for an item across a date range. |
-| `get_inventory_levels` | `oracle_ebs` | READ | Return on-hand, reserved, and available inventory for items at a location. |
-| `get_sales_orders` | `oracle_ebs` | READ | List open sales orders with item, quantity, customer, requested date, and priority. |
-| `get_demand_forecast` | `oracle_ebs` | READ | Return statistical or manual forecast for items by period with confidence level. |
+| `get_available_to_promise` | `mcp_agent_store` | READ | Return ATP quantity and earliest availability date for an item across a date range. |
+| `get_inventory_levels` | `mcp_agent_store` | READ | Return on-hand, reserved, and available inventory for items at a location. |
+| `get_sales_orders` | `mcp_agent_store` | READ | List open sales orders with item, quantity, customer, requested date, and priority. |
+| `get_demand_forecast` | `mcp_agent_store` | READ | Return statistical or manual forecast for items by period with confidence level. |
 
 ### 2. Production Agent
 
@@ -77,7 +79,7 @@ Maintenance│  ·    ●    ·    ·     ·    ·    ·    │    │  ●     
 | Tool | Server | Dir | Description |
 |------|--------|-----|-------------|
 | `list_wip_jobs` | `oracle_ebs` | READ | List all WIP jobs with status, start/end dates, quantity, and routing. |
-| `get_inventory_levels` | `oracle_ebs` | READ | Return on-hand inventory for components and raw materials. |
+| `get_inventory_levels` | `mcp_agent_store` | READ | Return on-hand inventory for components and raw materials. |
 | `get_bom` | `oracle_ebs` | READ | Return the bill of materials (components + quantities) for an item. |
 | `get_work_center_capacity` | `oracle_ebs` | READ | Return available capacity (hours) per work center per period. |
 | `get_routing` | `oracle_ebs` | READ | Return the manufacturing routing (operations sequence) for an item. |
@@ -89,11 +91,11 @@ Maintenance│  ·    ●    ·    ·     ·    ·    ·    │    │  ●     
 
 | Tool | Server | Dir | Description |
 |------|--------|-----|-------------|
-| `get_suppliers` | `oracle_ebs` | READ | Return approved supplier list for an item with lead times, pricing, and MOQ. |
-| `get_item_costs` | `oracle_ebs` | READ | Return standard and last actual cost for items. |
-| `get_purchase_orders` | `oracle_ebs` | READ | List open POs with item, quantity, supplier, due date, and status. |
-| `get_supplier_performance` | `oracle_ebs` | READ | Return on-time delivery %, quality score, and lead time variance per supplier. |
-| `create_purchase_requisition` | `oracle_ebs` | WRITE | Create a purchase requisition. Requires HITL if amount > threshold. |
+| `get_suppliers` | `mcp_agent_buyer` | READ | Return approved supplier list for an item with lead times, pricing, and MOQ. |
+| `get_item_costs` | `mcp_agent_buyer` | READ | Return standard and last actual cost for items. |
+| `get_purchase_orders` | `mcp_agent_buyer` | READ | List open POs with item, quantity, supplier, due date, and status. |
+| `get_supplier_performance` | `mcp_agent_buyer` | READ | Return on-time delivery %, quality score, and lead time variance per supplier. |
+| `create_purchase_requisition` | `mcp_agent_buyer` | WRITE | Create a purchase requisition. Requires HITL if amount > threshold. |
 
 ### 4. Warehouse Agent
 
@@ -101,10 +103,10 @@ Maintenance│  ·    ●    ·    ·     ·    ·    ·    │    │  ●     
 
 | Tool | Server | Dir | Description |
 |------|--------|-----|-------------|
-| `get_inventory_levels` | `oracle_ebs` | READ | Return on-hand, reserved, and available inventory per item × location. |
-| `get_safety_stock` | `oracle_ebs` | READ | Return safety stock targets per item × location. |
-| `get_storage_capacity` | `oracle_ebs` | READ | Return total and available storage capacity (pallet/volume) per warehouse. |
-| `get_inventory_aging` | `oracle_ebs` | READ | Return inventory aging breakdown (FIFO layers) for items. |
+| `get_inventory_levels` | `mcp_agent_store` | READ | Return on-hand, reserved, and available inventory per item × location. |
+| `get_safety_stock` | `mcp_agent_store` | READ | Return safety stock targets per item × location. |
+| `get_storage_capacity` | `mcp_agent_store` | READ | Return total and available storage capacity (pallet/volume) per warehouse. |
+| `get_inventory_aging` | `mcp_agent_store` | READ | Return inventory aging breakdown (FIFO layers) for items. |
 
 ### 5. Logistics Agent
 
@@ -112,11 +114,11 @@ Maintenance│  ·    ●    ·    ·     ·    ·    ·    │    │  ●     
 
 | Tool | Server | Dir | Description |
 |------|--------|-----|-------------|
-| `get_shipments` | `oracle_ebs` | READ | List planned and in-transit shipments with origin, destination, items, and ETA. |
-| `get_carrier_rates` | `oracle_ebs` | READ | Return carrier rate cards by lane, weight, and service level. |
-| `get_transit_times` | `oracle_ebs` | READ | Return standard transit time (days) per lane and service level. |
-| `get_delivery_constraints` | `oracle_ebs` | READ | Return customer delivery windows, dock constraints, and appointment requirements. |
-| `create_shipment` | `oracle_ebs` | WRITE | Create a shipment record. Requires HITL for expedited shipments. |
+| `get_shipments` | `mcp_agent_store` | READ | List planned and in-transit shipments with origin, destination, items, and ETA. |
+| `get_carrier_rates` | `mcp_agent_store` | READ | Return carrier rate cards by lane, weight, and service level. |
+| `get_transit_times` | `mcp_agent_store` | READ | Return standard transit time (days) per lane and service level. |
+| `get_delivery_constraints` | `mcp_agent_store` | READ | Return customer delivery windows, dock constraints, and appointment requirements. |
+| `create_shipment` | `mcp_agent_store` | WRITE | Create a shipment record. Requires HITL for expedited shipments. |
 
 ### 6. Finance Agent
 
@@ -124,7 +126,7 @@ Maintenance│  ·    ●    ·    ·     ·    ·    ·    │    │  ●     
 
 | Tool | Server | Dir | Description |
 |------|--------|-----|-------------|
-| `get_item_costs` | `oracle_ebs` | READ | Return standard, actual, and target costs per item. |
+| `get_item_costs` | `mcp_agent_buyer` | READ | Return standard, actual, and target costs per item. |
 | `get_budget` | `oracle_ebs` | READ | Return budget allocation per department/cost center per period. |
 | `get_gl_accounts` | `oracle_ebs` | READ | Return chart of accounts relevant to supply chain (COGS, inventory, variance). |
 | `get_profitability` | `oracle_ebs` | READ | Return margin analysis per item/customer/channel. |
@@ -186,8 +188,8 @@ consumers. The tool registry enforces that each agent only sees its assigned sub
 
 | Tool | Server | Dir | Available to |
 |------|--------|-----|-------------|
-| `get_inventory_levels` | `oracle_ebs` | READ | Sales, Production, Warehouse |
-| `get_item_costs` | `oracle_ebs` | READ | Finance, Procurement |
+| `get_inventory_levels` | `mcp_agent_store` | READ | Sales, Production, Warehouse |
+| `get_item_costs` | `mcp_agent_buyer` | READ | Finance, Procurement |
 | `list_wip_jobs` | `oracle_ebs` | READ | Production, QC, Maintenance |
 | `get_bom` | `oracle_ebs` | READ | Production, PD |
 | `get_sop` | `external_rag` | READ | QA, QC, PD, Maintenance |
