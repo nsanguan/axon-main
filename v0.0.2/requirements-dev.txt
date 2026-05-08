@@ -1,0 +1,20 @@
+# =============================================================================
+# Axon — Development Dependencies
+# =============================================================================
+# Install: pip install -r requirements-dev.txt
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Testing
+# ---------------------------------------------------------------------------
+pytest>=8.3.0                # Test framework
+pytest-asyncio>=0.24.0       # Async test support (pytest-asyncio)
+pytest-mock>=3.14.0          # Mocking utilities
+pytest-timeout>=2.3.0        # Test timeout enforcement
+
+# ---------------------------------------------------------------------------
+# Code Quality
+# ---------------------------------------------------------------------------
+ruff>=0.6.0                  # Fast linter & formatter (replaces flake8/isort/black)
+mypy>=1.12.0                 # Static type checking
+pre-commit>=3.8.0            # Git pre-commit hook framework
