@@ -187,6 +187,9 @@ def log_event(
         **kwargs: Additional structured fields
     """
     log_fn = getattr(logger, level, logger.info)
+    # correlation_id is always injected internally; pop from kwargs if
+    # a caller passed it redundantly (existing code does this).
+    kwargs.pop("correlation_id", None)
     log_fn(
         event,
         correlation_id=get_correlation_id(),

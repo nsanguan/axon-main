@@ -1,0 +1,52 @@
+# Axon E2E Scenario: Machine Breakdown
+# A critical machine goes down mid-run. Production agent must escalate.
+# Expected: hitl_required=true (high-cost impact), ≥1 negotiation round.
+
+name: "Machine Breakdown"
+description: >
+  Critical CNC machine WC-401 breaks down during production of FG-001.
+  Production loses 2000 units. Procurement must source externally.
+
+demands:
+  - item_id: "FG-001"
+    quantity: 5000
+    priority: 85
+    confidence: 0.99
+    source: "sales_order"
+    customer: "Airbus"
+    period_start: "2026-06-01"
+    period_end: "2026-06-30"
+
+  - item_id: "FG-001"
+    quantity: 1000
+    priority: 60
+    confidence: 0.90
+    source: "safety_stock"
+    period_start: "2026-06-15"
+    period_end: "2026-07-15"
+
+supplies:
+  - item_id: "FG-001"
+    quantity: 3000
+    source: "on_hand"
+    location: "WH-01"
+    available_from: "2026-05-01"
+    available_to: "2026-12-31"
+
+  # Remaining 2000 units blocked — machine is down
+  # Only 3000 on-hand available, demand is 6000 → shortage of 3000
+
+business_weights:
+  cost: 0.25
+  delivery: 0.40
+  quality: 0.20
+  sustainability: 0.05
+  flexibility: 0.10
+
+max_negotiation_rounds: 5
+auto_approve: false
+
+# With a VIP customer (priority=85) and a large shortage, HITL must fire
+expected_hitl_required: true
+expected_deadlock: false
+expected_violations: 0

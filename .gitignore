@@ -1,10 +1,42 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+dist/
+build/
+
+# Cache dirs
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
 .env
 .venv
 venv/
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 *.log
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+.next/
+package.json
+package-lock.json
+npm-debug.log*
+
+# Docker
+.dockerignore
+docker/
+
+# Axon reference
+archives/

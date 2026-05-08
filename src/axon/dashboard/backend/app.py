@@ -34,7 +34,9 @@ def create_app() -> FastAPI:
 
     # Register routers
     from axon.dashboard.backend.routes import router
+    from axon.dashboard.backend.escalation_api import router as escalation_router
 
     app.include_router(router, prefix="/api")
+    app.include_router(escalation_router)
 
     return app

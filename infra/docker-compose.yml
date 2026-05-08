@@ -1,12 +1,42 @@
-version: "3.9"
+# =============================================================================
+# Axon Docker — Microservice Architecture
+#
+# Architecture overview:
+#
+#   ┌──────────────┐     ┌─────────────────┐     ┌───────────────┐
+#   │ axon-frontend │────▶│    axon-api     │────▶│ axon-orch     │
+#   │  (Next.js)    │     │  (FastAPI 8020) │     │ (MasterGraph) │
+#   └──────────────┘     └─────────────────┘     └───────┬───────┘
+#                                                        │
+#                    ┌───────────────────────────────────┼───────────┐
+#                    │  MCP protocol                      │           │
+#                    ▼                                    ▼           │
+#           ┌───────────────┐  ┌──────────────┐  ┌──────────────┐    │
+#           │ agent-comm    │  │ agent-ops    │  │ agent-tech   │    │
+#           │ :8101         │  │ :8102        │  │ :8103        │    │
+#           │ Sales         │  │ Production   │  │ QA,QC,Mainte │    │
+#           │ Procurement   │  │ Logistics    │  │ PD           │    │
+#           │ Finance       │  │ Warehouse    │  │              │    │
+#           └───────────────┘  └──────────────┘  └──────────────┘    │
+#                    │              │                │               │
+#                    └──────────────┴────────────────┘               │
+#                                   │                                │
+#                          ┌────────▼────────┐            ┌─────────▼────────┐
+#                          │  PostgreSQL     │            │     Redis        │
+#                          │  202.71.1.13    │            │  (container)     │
+#                          │  (physical)     │            │  :6379           │
+#                          └─────────────────┘            └──────────────────┘
+#
+# Usage:
+#   docker compose -f infra/docker-compose.yml build
+#   docker compose -f infra/docker-compose.yml up -d
+#   docker compose -f infra/docker-compose.yml down
+# =============================================================================
 
 services:
-  # ---------------------------------------------------------------------------
+  # ==========================================================================
   # Infrastructure
-  #   PostgreSQL runs on a physical server — configured via AXON_DATABASE__URL in .env
-  #   MCP servers (Oracle EBS, SAP, Odoo, RAG, PostgreSQL) are separate projects.
-  #   Axon connects to them via MCP client using URLs configured in .env.
-  # ---------------------------------------------------------------------------
+  # ==========================================================================
   redis:
     image: redis:7-alpine
     ports:
@@ -16,3 +46,167 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - axon-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Axon Agent Services — each group runs as a FastMCP server
+  # ==========================================================================
+  agent-commercial:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.agent
+      args:
+        AGENT_GROUP: commercial
+    ports:
+      - "8101:8101"
+    environment:
+      - AXON_AGENT_GROUP=commercial
+      - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
+      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - axon-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  agent-operations:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.agent
+      args:
+        AGENT_GROUP: operations
+    ports:
+      - "8102:8102"
+    environment:
+      - AXON_AGENT_GROUP=operations
+      - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
+      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - axon-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  agent-technical:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.agent
+      args:
+        AGENT_GROUP: technical
+    ports:
+      - "8103:8103"
+    environment:
+      - AXON_AGENT_GROUP=technical
+      - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
+      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - axon-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Axon Orchestrator — LangGraph MasterGraph engine
+  # ==========================================================================
+  axon-orchestrator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
+      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_AGENT_COMMERCIAL__URL=http://agent-commercial:8101/mcp
+      - AXON_AGENT_OPERATIONS__URL=http://agent-operations:8102/mcp
+      - AXON_AGENT_TECHNICAL__URL=http://agent-technical:8103/mcp
+      - AXON_LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+      agent-commercial:
+        condition: service_started
+      agent-operations:
+        condition: service_started
+      agent-technical:
+        condition: service_started
+    networks:
+      - axon-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Axon API — FastAPI Control Tower backend
+  # ==========================================================================
+  axon-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8020:8020"
+    environment:
+      - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
+      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - axon-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Axon Frontend — Next.js Control Tower dashboard
+  # ==========================================================================
+  axon-frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8020/api
+    depends_on:
+      - axon-api
+    networks:
+      - axon-net
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Excalidraw MCP Server — visual diagram generation
+  # ==========================================================================
+  excalidraw-mcp:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    command: npx excalidraw-mcp-server --port 8089
+    ports:
+      - "8089:8089"
+    networks:
+      - axon-net
+    profiles:
+      - viz
+    restart: unless-stopped
+
+networks:
+  axon-net:
+    driver: bridge

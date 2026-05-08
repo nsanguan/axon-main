@@ -38,6 +38,16 @@ class ExperienceLedger:
 
     async def _get_pool(self) -> asyncpg.Pool:
         if self._pool is None:
+            import json as _json
+
+            async def _init_conn(conn: asyncpg.Connection) -> None:
+                await conn.set_type_codec(
+                    "jsonb",
+                    encoder=_json.dumps,
+                    decoder=_json.loads,
+                    schema="pg_catalog",
+                )
+
             url = settings.database.url
             pg_url = url.replace("postgresql+asyncpg://", "postgresql://")
             self._pool = await asyncpg.create_pool(
@@ -45,6 +55,8 @@ class ExperienceLedger:
                 min_size=1,
                 max_size=5,
                 timeout=15,
+                server_settings={"search_path": "axon_brain"},
+                init=_init_conn,
             )
         return self._pool
 

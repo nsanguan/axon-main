@@ -14,6 +14,7 @@ Direction semantics:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -395,3 +396,114 @@ TOOL_CATALOG: list[ToolSpec] = [
 def get_tools_for_agent(agent_id: str) -> list[ToolSpec]:
     """Return all tool specs available to a given agent."""
     return [t for t in TOOL_CATALOG if agent_id in t.agent_ids]
+
+
+# =============================================================================
+# PydanticAI Tool Builder
+# =============================================================================
+
+
+def build_pydantic_tools(agent_id: str, connectors: dict[str, Any]) -> list[Any]:
+    """Build PydanticAI Tool objects for a given agent and connector registry.
+
+    Each tool wraps a ``BaseMCPConnector._call_tool`` call so agents can
+    query MCP servers during the REASON phase.  WRITE tools additionally
+    check the WriteGate before executing.
+
+    The ``args_json`` parameter is a JSON-encoded string of tool arguments.
+    The LLM determines what to put inside based on the tool description.
+
+    Args:
+        agent_id:   Agent identifier, e.g. ``"sales"``.
+        connectors: Mapping ``{server_name: BaseMCPConnector instance}``.
+
+    Returns:
+        List of PydanticAI ``Tool`` objects (empty list if no connectors supplied).
+    """
+    import json as _json
+    from typing import Any as _Any
+
+    from pydantic_ai import RunContext, Tool
+
+    from axon.connectors.write_gate import WriteGateError, requires_hitl
+
+    agent_tool_specs = get_tools_for_agent(agent_id)
+    pydantic_tools: list[Any] = []
+
+    # Deduplicate by name — keep first occurrence (TOOL_CATALOG has duplicates for shared tools)
+    seen_names: set[str] = set()
+
+    for spec in agent_tool_specs:
+        if spec.name in seen_names:
+            continue
+        seen_names.add(spec.name)
+
+        connector = connectors.get(spec.server)
+        if connector is None:
+            continue
+
+        # Capture loop variables in closure
+        _spec = spec
+        _connector = connector
+
+        if spec.direction == "WRITE":
+
+            async def _write_fn(
+                ctx: RunContext[_Any],
+                args_json: str = "{}",
+                *,
+                __spec: ToolSpec = _spec,
+                __connector: _Any = _connector,
+            ) -> str:
+                try:
+                    args: dict[str, _Any] = _json.loads(args_json) if args_json.strip() else {}
+                except _json.JSONDecodeError:
+                    args = {}
+
+                hitl_needed, reason = requires_hitl(__spec.name, args, "WRITE")
+                if hitl_needed:
+                    raise WriteGateError(__spec.name, reason)
+
+                try:
+                    result = await __connector._call_tool(__spec.name, args)
+                    if isinstance(result, (dict, list)):
+                        return _json.dumps(result)
+                    return str(result)
+                except Exception as exc:
+                    return f"Tool {__spec.name} error: {exc!s}"
+
+            _write_fn.__name__ = spec.name
+            _write_fn.__doc__ = spec.description
+            pydantic_tools.append(
+                Tool(_write_fn, takes_ctx=True, name=spec.name, description=spec.description)
+            )
+
+        else:
+
+            async def _read_fn(
+                ctx: RunContext[_Any],
+                args_json: str = "{}",
+                *,
+                __spec: ToolSpec = _spec,
+                __connector: _Any = _connector,
+            ) -> str:
+                try:
+                    args = _json.loads(args_json) if args_json.strip() else {}
+                except _json.JSONDecodeError:
+                    args = {}
+
+                try:
+                    result = await __connector._call_tool(__spec.name, args)
+                    if isinstance(result, (dict, list)):
+                        return _json.dumps(result)
+                    return str(result)
+                except Exception as exc:
+                    return f"Tool {__spec.name} unavailable: {exc!s}"
+
+            _read_fn.__name__ = spec.name
+            _read_fn.__doc__ = spec.description
+            pydantic_tools.append(
+                Tool(_read_fn, takes_ctx=True, name=spec.name, description=spec.description)
+            )
+
+    return pydantic_tools

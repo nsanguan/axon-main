@@ -1,6 +1,6 @@
 # 🚀 Axon: Strategic Implementation Plan
 
-> Version 0.0.2 — 2026-05-08
+> Version 0.0.3 — 2026-05-08
 >
 > Companion documents:
 > - [Architecture & Error Model](docs/architecture.md)
@@ -9,7 +9,20 @@
 
 ---
 
-## Phase 1: Foundation & Semantic Governance (Month 1)
+## Implementation Status
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Foundation & Semantic Governance | ✅ Complete |
+| 2 | MCP Perception Mesh | ✅ Complete |
+| 3 | Domain Cognition & Negotiation | ✅ Complete |
+| 4 | Learning Loop & Executive Control | ✅ Complete |
+| 5 | Enterprise Hardening & Write-back | ✅ Complete |
+| 6 | Control Tower Dashboard | ✅ Complete |
+
+---
+
+## Phase 1: Foundation & Semantic Governance (Month 1) ✅
 
 *Focus: Establishing the universal language, knowledge bridge, and buildable project skeleton.*
 
@@ -20,7 +33,7 @@
 - **1.5 Telemetry & Tracing**: Initialize **Logfire**. Set up instrumentation to trace every "thought" and "tool call" made by the agents. Every `MCPToolOutput` carries a `correlation_id` for end-to-end auditability.
 - **1.6 Testing Foundation**: Write unit tests alongside schema code — round-trip validation, `SemanticTransformer.can_handle()` routing, and circuit breaker state machine transitions.
 
-## Phase 2: MCP Perception Mesh (Month 2)
+## Phase 2: MCP Perception Mesh (Month 2) ✅
 
 *Focus: Connecting the AI brain to enterprise data via pure MCP — with graceful degradation.*
 
@@ -30,7 +43,7 @@
 - **2.4 Tool Discovery Logic**: Implement an automated discovery service that scans available MCP servers, registers their capabilities to the shared tool registry, and alerts when tools appear or disappear.
 - **2.5 Integration Tests**: Agent + MCP stub scenarios. Verify that an agent receiving stubbed MCP responses produces valid `AgentProposal` instances.
 
-## Phase 3: Domain Cognition & Negotiation (Month 3-4)
+## Phase 3: Domain Cognition & Negotiation (Month 3-4) ✅
 
 *Focus: Building specialized intelligence and the conflict resolution engine.*
 
@@ -43,7 +56,7 @@
 - **3.3 Utility Scoring Engine**: Implement `U_i = Σ (w_k × s_ik)` for each agent proposal, where `w_k` are strategic weights (set via Control Tower) and `s_ik` are normalized scores on dimensions like cost, delivery, and quality. Global utility `U_total = Σ U_i` is tracked per negotiation round.
 - **3.4 Negotiation Timeout**: Maximum 5 rounds (configurable). Non-convergence triggers `NEGOTIATION_DEADLOCK` → weighted-random tiebreaker + mandatory HITL review.
 
-## Phase 4: Learning Loop & Executive Control (Month 5)
+## Phase 4: Learning Loop & Executive Control (Month 5) ✅
 
 *Focus: Making the system smarter and giving control back to the users.*
 
@@ -57,7 +70,7 @@
 - **4.2 Strategic Admin Dashboard**: Launch the **Control Tower**. Provide a UI for executives to adjust "Strategic Weights" (e.g., shifting priority from *Cost Saving* to *On-time Delivery*). Weights feed directly into the Utility Scoring Engine.
 - **4.3 Human-in-the-Loop (HITL)**: Implement approval nodes in LangGraph. High-impact plans and all deadlock-resolved plans require a human manager to "approve" or "reject" with feedback via the dashboard. Rejected plans are recorded in the Experience Ledger as negative examples.
 
-## Phase 5: Enterprise Hardening & Write-back (Month 6+)
+## Phase 5: Enterprise Hardening & Write-back (Month 6+) ✅
 
 *Focus: Moving from planning to execution safely.*
 
@@ -65,6 +78,22 @@
 - **5.2 Enterprise RBAC**: Finalize Role-Based Access Control. Ensure agents only access MCP tools and RAG data relevant to their specific domain. Tool-level authorization enforced at the MCP server boundary.
 - **5.3 Performance Optimization**: Refine LLM prompts, optimize MCP tool-call batching, and tune Redis TTLs to reduce latency in global plan generation.
 - **5.4 E2E & Property-Based Testing**: Full planning cycle with MCP stubs. Property-based tests verify invariants: utility scores are monotonic, allocations never exceed supply, all demand is allocated or explicitly deferred.
+
+---
+
+## Phase 6: Control Tower Dashboard ✅
+
+*Focus: Live operational visibility and human-in-the-loop governance.*
+
+- **6.1 PostgreSQL Board Schema**: Created `axon_board` schema with 6 tables — `system_config`, `business_weights`, `hitl_queue`, `approval_audit`, `board_events`, `board_kpis`. Migration idempotent (`CREATE IF NOT EXISTS`).
+- **6.2 BoardRepository**: Async `asyncpg`-based repository (`src/axon/dashboard/backend/board_repo.py`) for all Control Tower persistence. In-memory fallback on DB unavailability.
+- **6.3 FastAPI Backend**: 27-endpoint Control Tower API (`/api/health`, `/api/system`, `/api/weights`, `/api/plans`, `/api/approvals/pending`, `/api/approvals/action`, `/api/approvals/config`, `/api/agents`, `/api/escalation`). Running on port 8200.
+- **6.4 Next.js Frontend**: App Router (`app/` directory) with 4 pages — Dashboard, Plan History, Strategic Weights, Pending Approvals. Running on port 3010 with proxy rewrites to FastAPI.
+- **6.5 DB-backed Weights**: `GET/PUT /api/weights` reads/writes `axon_board.business_weights` singleton. Reset endpoint restores defaults and persists.
+- **6.6 DB-backed HITL Queue**: `GET /api/approvals/pending` merges persistent `hitl_queue` rows with runtime in-memory queue. `POST /api/approvals/action` removes from both and writes `approval_audit` + `board_events`.
+- **6.7 Experience Ledger Fix**: `ExperienceLedger._get_pool()` now sets `search_path=axon_brain` and registers asyncpg JSONB codec — enabling direct SQL reads of all seeded plan records.
+- **6.8 Seed Data**: 10 plan history records (Boeing, Airbus, Lockheed Martin, GE Aviation, Raytheon, MRO) + 4 HITL scenarios (VIP, deadlock, cost-threshold, demand spike) seeded to PostgreSQL.
+- **6.9 E2E Test Suite**: 27 automated tests (`tests/test_dashboard_e2e.py`) covering all API endpoints with `httpx.AsyncClient` + `ASGITransport`.
 
 ---
 

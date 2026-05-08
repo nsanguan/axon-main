@@ -361,26 +361,26 @@ class TestMigrationSchema:
     """Validates the migration SQL creates expected tables and columns."""
 
     def test_experience_records_has_correlation_id(self):
-        """The migration SQL includes correlation_id column."""
-        from axon.core.schema.migrate import SCHEMA_SQL
+        """The migration SQL (BRAIN_SQL) includes correlation_id column."""
+        from axon.core.schema.migrate import BRAIN_SQL
 
-        assert "correlation_id" in SCHEMA_SQL
+        assert "correlation_id" in BRAIN_SQL
 
-    def test_experience_records_has_embedding(self):
-        """The migration SQL includes embedding vector column."""
-        from axon.core.schema.migrate import SCHEMA_SQL
+    def test_experience_records_has_memory_store(self):
+        """The migration SQL includes memory_store and orchestrator_logs."""
+        from axon.core.schema.migrate import BRAIN_SQL
 
-        assert "embedding" in SCHEMA_SQL
-        assert "VECTOR" in SCHEMA_SQL
+        assert "memory_store" in BRAIN_SQL
+        assert "orchestrator_logs" in BRAIN_SQL
 
     def test_plan_traces_table_exists(self):
-        """The migration SQL creates plan_traces table."""
-        from axon.core.schema.migrate import SCHEMA_SQL
+        """The migration SQL (BRAIN_SQL) creates plan_traces table."""
+        from axon.core.schema.migrate import BRAIN_SQL
 
-        assert "plan_traces" in SCHEMA_SQL
+        assert "plan_traces" in BRAIN_SQL
 
     def test_retention_indexes(self):
         """The migration creates indexes for plan_traces queries."""
-        from axon.core.schema.migrate import SCHEMA_SQL
+        from axon.core.schema.migrate import BRAIN_SQL
 
-        assert "idx_traces_decision" in SCHEMA_SQL
+        assert "idx_traces_decision" in BRAIN_SQL

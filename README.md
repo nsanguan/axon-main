@@ -86,12 +86,15 @@ axon/
 │   ├── mcp-tools.md
 │   └── adr/
 ├── tests/                         # Simulation & Integration tests
-├── infra/                         # Docker Compose & deployment
+│   └── scenarios/                 # Gherkin-style disruption scenarios
+├── scripts/                       # Scenario test runner
+├── examples/                      # Escalation architecture reference
+├── infra/                         # Docker Compose &amp; deployment
 │   └── docker-compose.yml
 ├── pyproject.toml                 # Build & Dependencies
 ├── requirements.txt               # Full tech stack (pip install)
 ├── requirements-dev.txt           # Dev tooling (pytest, ruff, mypy)
-├── AGENTS.md                      # Agent instructions (OpenAI / Cursor / Copilot)
+├── AGENTS.md                      # Agent instructions (instruction manual)
 └── README.md                      # Documentation
 ```
 
@@ -159,16 +162,34 @@ In short:
 * Develop the **Conflict Resolution Engine** to handle cross-departmental "deadlocks" (e.g., Maintenance vs. Production).
 * Implement the **Utility Engine** to calculate the best plan based on Business Weights.
 
-### **Phase 4: Feedback & Control (Month 5)**
+### **Phase 4: Feedback & Control (Month 5)** ✅
 
-* Launch **Admin Control Tower** for real-time strategic weight tuning.
-* Activate the **Experience Ledger** to log the success/failure of plans.
-* Enable **Human-in-the-loop (HITL)** for final plan approvals.
+* Launch **Admin Control Tower** for real-time strategic weight tuning. ✅
+* Activate the **Experience Ledger** to log the success/failure of plans. ✅
+* Enable **Human-in-the-loop (HITL)** for final plan approvals. ✅
+* PostgreSQL-backed `axon_brain` schema (experience_records, memory_store, plan_traces). ✅
+* Async `ExperienceLedger` with JSONB codec, `search_path=axon_brain`, semantic similarity retrieval. ✅
 
-### **Phase 5: Scale & Governance (Month 6+)**
+### **Phase 5: Scale & Governance (Month 6+)** ✅
 
-* Secure Bi-directional MCP tool-calls for ERP write-backs.
-* Finalize RBAC and AI Guardrails for enterprise safety.
+* Secure Bi-directional MCP tool-calls for ERP write-backs. ✅
+* Finalize RBAC and AI Guardrails for enterprise safety. ✅
+* Escalation architecture: 4-tier ladder (Worker→Manager→Director→Executive). ✅
+* Executive Agent with Intent Router + Crisis Decider. ✅
+* HITL approval API with REST endpoints and SSE streaming. ✅
+* Draft-Only Mandate for AI procurement recommendations. ✅
+
+### **Phase 6: Control Tower Dashboard** ✅
+
+* **FastAPI backend** (`src/axon/dashboard/backend/`) on port **8200** with 27-endpoint API. ✅
+* **Next.js 14 App Router** frontend (`src/axon/dashboard/frontend/`) on port **3010**. ✅
+* `axon_board` PostgreSQL schema — 6 tables: `system_config`, `business_weights`, `hitl_queue`, `approval_audit`, `board_events`, `board_kpis`. ✅
+* `BoardRepository` — async DB-backed storage with in-memory fallback for all Control Tower state. ✅
+* **Strategic Weights** page — live CRUD for `cost / delivery / quality / sustainability / flexibility` weights with DB persistence. ✅
+* **Plan History** page — 10 seeded plans across aerospace customers (Boeing, Airbus, Lockheed, GE Aviation, Raytheon) with confidence scores, allocation counts, deadlock / approved status. ✅
+* **Pending Approvals** page — 4 seeded HITL scenarios (VIP order, machine breakdown deadlock, cost-threshold expediting, demand spike); approve/reject actions write audit trail to `axon_board.approval_audit`. ✅
+* **Dashboard home** — system health card, degradation badge, pending approval count. ✅
+* API proxy: Next.js `/api/*` → FastAPI `localhost:8200/api/*` via `next.config.js` rewrites. ✅
 
 ---
 
@@ -189,6 +210,118 @@ In short:
 **Axon is not just another ERP, not just another forecasting tool, and not just another generic agent framework.**
 
 It is an **AI-native planning and orchestration layer** for modern ERP environments — purpose-built to help supply chain teams move from fragmented planning processes to intelligent, explainable, and increasingly autonomous operations.
+
+---
+
+## 🧪 How to Run Tests
+
+### Python Unit Tests
+
+```bash
+# Run all unit tests
+pytest
+
+# Run a specific test file
+pytest tests/test_schema.py
+
+# Run with verbose output
+pytest -v
+```
+
+### Lint & Type Check
+
+```bash
+# Lint
+ruff check src/ tests/
+
+# Format check
+ruff format --check src/ tests/
+
+# Type check
+mypy src/
+
+# All checks (before committing)
+ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/ && pytest
+```
+
+### Scenario Tests (Integration Simulation)
+
+Scenarios are Markdown files in `tests/scenarios/` describing supply chain disruptions in **Gherkin-style** (Given-When-Then). Each scenario defines:
+
+- **Given (Context)**: Current state — inventory, orders, capacity
+- **When (Trigger)**: The disruption event
+- **Then (Expected Behavior)**: MCP tools to call, solutions to generate, HITL decisions
+
+```bash
+# List available scenarios
+python scripts/test_runner.py --list
+
+# Dry-run all scenarios (parse + display without invoking orchestrator)
+python scripts/test_runner.py --dry-run
+
+# Run a single scenario
+python scripts/test_runner.py tests/scenarios/delay_shipment_po.md
+```
+
+**Available scenarios:**
+
+| File | Type | Severity |
+|------|------|----------|
+| `delay_shipment_po.md` | Procurement / Supply Delay | Critical |
+| `machine_breakdown.md` | Production / Equipment Failure | Critical |
+| `demand_spike.md` | Sales / Demand Surge | High |
+| `inventory_shortage.md` | Warehouse / Raw Material Shortage | High |
+| `escalation_production_breakdown.md` | Escalation / Multi-tier | Critical |
+| `escalation_stock_check.md` | Escalation / Inventory Review | High |
+
+To add a new scenario, create a `tests/scenarios/<name>.md` file following the Gherkin-style template.
+The `scripts/test_runner.py` auto-discovers all `.md` files in the directory.
+
+---
+
+## 🗄 Database Schemas
+
+Axon uses PostgreSQL with five namespaced schemas:
+
+| Schema | Purpose | Key Tables |
+|--------|---------|------------|
+| `axon_brain` | Agent memory, experience ledger, orchestrator logs | `experience_records`, `memory_store`, `plan_traces`, `orchestrator_logs` |
+| `axon_plan` | Demand/Supply/Allocation planning records | `demands`, `supplies`, `allocations` |
+| `axon_agents` | Negotiation rounds and agent proposals | `negotiation_rounds`, `agent_proposals`, `proposal_allocations` |
+| `axon_mcp` | Tool registry and agent-tool assignments | `tool_registry`, `agent_tool_assignments` |
+| `axon_board` | Control Tower state (weights, HITL queue, audit) | `business_weights`, `system_config`, `hitl_queue`, `approval_audit`, `board_events`, `board_kpis` |
+
+```bash
+# Run migrations (create all schemas + tables)
+python src/axon/core/schema/migrate.py
+
+# Seed sample data (10 plans, 4 HITL scenarios, weights, events)
+python src/axon/core/schema/seed.py
+```
+
+---
+
+## 🖥 Control Tower (Dashboard)
+
+The Axon Control Tower is a live web dashboard backed by FastAPI + Next.js.
+
+```bash
+# Start backend API (port 8200)
+.venv/bin/python3 -m uvicorn axon.dashboard.backend.app:create_app --factory \
+    --host 0.0.0.0 --port 8200 --reload
+
+# Start frontend (port 3010)
+cd src/axon/dashboard/frontend && npm run dev -- -p 3010
+```
+
+| Page | URL | Description |
+|------|-----|-------------|
+| Dashboard | `/` | System health, degradation level, pending approvals count |
+| Plan History | `/plans` | All recorded plans with confidence, status, tags |
+| Strategic Weights | `/weights` | Tune cost/delivery/quality/sustainability/flexibility weights |
+| Pending Approvals | `/approvals` | HITL queue — approve or reject AI-generated plans |
+
+API reference: `http://localhost:8200/docs` (Swagger UI)
 
 ---
 

@@ -1,0 +1,75 @@
+# Axon E2E Scenario: Multi-Agent Conflict
+# Sales wants maximum allocation for VIP customers.
+# Finance insists on cost caps. Production has limited capacity.
+# Expected: negotiation takes multiple rounds, resolved within max_rounds.
+
+name: "Multi-Agent Conflict"
+description: >
+  Competing demands between sales (VIP priority), finance (cost ceiling),
+  and production (capacity constraint). Agents must negotiate a balanced plan.
+
+demands:
+  - item_id: "FG-001"
+    quantity: 8000
+    priority: 90
+    confidence: 0.95
+    source: "sales_order"
+    customer: "Boeing VIP"
+    period_start: "2026-06-01"
+    period_end: "2026-06-30"
+
+  - item_id: "FG-001"
+    quantity: 3000
+    priority: 60
+    confidence: 0.80
+    source: "sales_order"
+    customer: "Standard Corp"
+    period_start: "2026-06-01"
+    period_end: "2026-06-30"
+
+  - item_id: "RM-001"
+    quantity: 5000
+    priority: 70
+    confidence: 0.85
+    source: "forecast"
+    period_start: "2026-05-01"
+    period_end: "2026-06-30"
+
+supplies:
+  - item_id: "FG-001"
+    quantity: 6000
+    source: "on_hand"
+    location: "WH-01"
+    available_from: "2026-05-01"
+    available_to: "2026-12-31"
+
+  - item_id: "FG-001"
+    quantity: 2000
+    source: "wip"
+    wip_job: "WIP-20100"
+    arrival_date: "2026-06-15"
+
+  - item_id: "RM-001"
+    quantity: 4000
+    source: "purchase_order"
+    supplier: "TitaniumMet Inc"
+    arrival_date: "2026-06-05"
+
+  - item_id: "RM-001"
+    quantity: 2000
+    source: "planned"
+    arrival_date: "2026-06-20"
+
+business_weights:
+  cost: 0.30
+  delivery: 0.30
+  quality: 0.20
+  sustainability: 0.10
+  flexibility: 0.10
+
+max_negotiation_rounds: 5
+auto_approve: false
+
+expected_allocation_count: 2
+expected_deadlock: false
+expected_violations: 0

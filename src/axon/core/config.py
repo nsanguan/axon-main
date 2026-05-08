@@ -91,6 +91,29 @@ class LearningConfig(BaseSettings):
     auto_retention: bool = True
 
 
+class MemoryConfig(BaseSettings):
+    """LangGraph short-term (checkpointer) and long-term (store) memory configuration.
+
+    Short-term memory uses PostgresSaver to persist graph checkpoints.
+    Long-term memory uses PostgresStore (BaseStore) for cross-thread knowledge.
+    """
+
+    # Short-term (checkpointer)
+    checkpoint_enabled: bool = True
+    checkpoint_ttl_seconds: int = 604800  # 7 days
+    checkpoint_prune_after_days: int = 30
+
+    # Long-term (store)
+    store_enabled: bool = True
+    store_namespaces: list[str] = [
+        "agent_insights",
+        "negotiation_patterns",
+        "plan_history",
+        "business_weights",
+    ]
+    store_search_limit: int = 10
+
+
 # =============================================================================
 # Root Settings
 # =============================================================================
@@ -120,6 +143,10 @@ class Settings(BaseSettings):
     mcp_odoo: MCPServerConfig = MCPServerConfig()
     mcp_external_rag: MCPServerConfig = MCPServerConfig()
     mcp_postgresql: MCPServerConfig = MCPServerConfig()
+    mcp_excalidraw: MCPServerConfig = MCPServerConfig(
+        url=AnyHttpUrl("http://localhost:8089/mcp"),
+        enabled=False,
+    )
 
     # Infrastructure
     database: DatabaseConfig = DatabaseConfig()
@@ -137,6 +164,9 @@ class Settings(BaseSettings):
 
     # Learning & Experience Ledger
     learning: LearningConfig = LearningConfig()
+
+    # Memory (LangGraph short-term + long-term)
+    memory: MemoryConfig = MemoryConfig()
 
     # Security
     secret_key: SecretStr = SecretStr("insecure-default-change-in-production")

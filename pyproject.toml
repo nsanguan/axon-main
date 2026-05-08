@@ -29,6 +29,7 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
     "websockets>=14.0",
     "langgraph>=0.2.0",
+    "langgraph-checkpoint-postgres>=3.0.0",
     "mcp>=1.4.0",
     "httpx>=0.28.0",
     "logfire>=0.45.0",
@@ -41,6 +42,9 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[project.scripts]
+axon-sim = "axon.sim.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.0",
@@ -50,6 +54,7 @@ dev = [
     "ruff>=0.6.0",
     "mypy>=1.12.0",
     "pre-commit>=3.8.0",
+    "hypothesis>=6.100.0",
 ]
 
 [tool.ruff]

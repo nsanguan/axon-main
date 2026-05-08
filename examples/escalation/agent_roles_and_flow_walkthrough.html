@@ -1,0 +1,257 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.tabs{display:flex;gap:6px;padding:12px 16px 0;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:8px 8px 0 0;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--color-border-tertiary);border-bottom:none;background:var(--color-background-secondary);color:var(--color-text-secondary);transition:all .15s}
+.tab.active{background:var(--color-background-primary);color:var(--color-text-primary)}
+.panel{display:none;border:1px solid var(--color-border-tertiary);border-radius:0 8px 8px 8px;margin:0 16px;background:var(--color-background-primary)}
+.panel.active{display:block}
+.step-row{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--color-border-tertiary);cursor:pointer;transition:background .12s}
+.step-row:hover{background:var(--color-background-secondary)}
+.step-row:last-child{border-bottom:none}
+.step-num{min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;margin-top:1px}
+.n-teal{background:#E1F5EE;color:#0F6E56}.n-purple{background:#EEEDFE;color:#534AB7}
+.n-coral{background:#FAECE7;color:#993C1D}.n-amber{background:#FAEEDA;color:#854F0B}
+.n-green{background:#EAF3DE;color:#3B6D11}.n-gray{background:#F1EFE8;color:#5F5E5A}
+@media(prefers-color-scheme:dark){
+.n-teal{background:#085041;color:#9FE1CB}.n-purple{background:#3C3489;color:#CECBF6}
+.n-coral{background:#712B13;color:#F5C4B3}.n-amber{background:#633806;color:#FAC775}
+.n-green{background:#27500A;color:#C0DD97}.n-gray{background:#444441;color:#D3D1C7}
+}
+.step-body{flex:1}
+.step-who{font-size:11px;font-weight:500;margin-bottom:2px}
+.step-what{font-size:13px;color:var(--color-text-primary);line-height:1.5}
+.step-detail{font-size:11px;color:var(--color-text-secondary);margin-top:3px;font-family:var(--font-mono)}
+.badge-row{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.badge{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:500}
+.b-teal{background:#E1F5EE;color:#0F6E56}.b-purple{background:#EEEDFE;color:#534AB7}
+.b-coral{background:#FAECE7;color:#993C1D}.b-amber{background:#FAEEDA;color:#854F0B}
+.b-green{background:#EAF3DE;color:#3B6D11}.b-gray{background:#F1EFE8;color:#5F5E5A}
+@media(prefers-color-scheme:dark){
+.b-teal{background:#085041;color:#9FE1CB}.b-purple{background:#3C3489;color:#CECBF6}
+.b-coral{background:#712B13;color:#F5C4B3}.b-amber{background:#633806;color:#FAC775}
+.b-green{background:#27500A;color:#C0DD97}.b-gray{background:#444441;color:#D3D1C7}
+}
+.arrow-down{text-align:center;padding:2px 0;color:var(--color-text-tertiary);font-size:16px;line-height:1}
+.section-head{padding:10px 16px 4px;font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--color-border-tertiary)}
+.decision-box{margin:10px 16px;padding:10px 14px;border-radius:8px;border:1px solid var(--color-border-secondary);background:var(--color-background-secondary)}
+.decision-label{font-size:11px;font-weight:500;color:var(--color-text-tertiary);margin-bottom:4px}
+.decision-text{font-size:13px;color:var(--color-text-primary)}
+</style>
+
+<div class="tabs">
+  <div class="tab active" onclick="show('map')">Role Map</div>
+  <div class="tab" onclick="show('flow')">Flow ทีละ Step</div>
+  <div class="tab" onclick="show('branch')">Branch: ไม่มี Stock</div>
+</div>
+
+<div id="p-map" class="panel active">
+<div class="section-head">Pattern C — ใครคือใคร</div>
+
+<div class="step-row" onclick="sendPrompt('Show me the Executive Agent node code that handles intent classification for 1000 user intents')">
+  <div class="step-num n-coral">E</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#993C1D">Executive Agent = ผู้จัดการใหญ่ (กองบัญชาการ)</div>
+    <div class="step-what">รับ user message → classify intent → ตัดสินใจว่าจะ route ไป flow ไหน</div>
+    <div class="step-detail">input: "ตรวจสอบ Stock WH01..." → output: intent="stock_check_and_reorder"</div>
+    <div class="badge-row">
+      <span class="badge b-coral">1 in 1000 intent → 1 flow</span>
+      <span class="badge b-gray">ไม่ทำงานเอง แค่ตัดสินใจ</span>
+    </div>
+  </div>
+</div>
+
+<div class="step-row" onclick="sendPrompt('Show me a Supervisor node in LangGraph that routes between WhereHouseAgent and BuyerAgent')">
+  <div class="step-num n-purple">S</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#534AB7">Supervisor Node = ผู้จัดการ Flow (หัวหน้าทีม)</div>
+    <div class="step-what">ควบคุมลำดับงานภายใน flow — ใครทำก่อน ใครทำหลัง ถ้าเจอ condition ให้ทำอะไร</div>
+    <div class="step-detail">stock_check_reorder_flow: WhereHouseAgent → [check result] → BuyerAgent</div>
+    <div class="badge-row">
+      <span class="badge b-purple">conditional_edge ใน LangGraph</span>
+      <span class="badge b-gray">handover logic อยู่ที่นี่</span>
+    </div>
+  </div>
+</div>
+
+<div class="step-row" onclick="sendPrompt('What is the difference between WhereHouseAgent and BuyerAgent node functions?')">
+  <div class="step-num n-teal">M</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#0F6E56">Manager Agents = ผู้เชี่ยวชาญ (พนักงานมือโปร)</div>
+    <div class="step-what">WhereHouseAgent — เชี่ยวชาญด้าน warehouse, stock, location</div>
+    <div class="step-what">BuyerAgent — เชี่ยวชาญด้าน PO, supplier, price</div>
+    <div class="step-detail">แต่ละตัวมี PydanticAI contract + MCP tools ของตัวเอง</div>
+    <div class="badge-row">
+      <span class="badge b-teal">ทำงานจริง เรียก MCP</span>
+      <span class="badge b-gray">ไม่รู้จัก agent อื่น</span>
+    </div>
+  </div>
+</div>
+
+<div class="decision-box">
+  <div class="decision-label">สรุป mapping กับ diagram Pattern C</div>
+  <div class="decision-text">Executive = node แรกของทุก flow &nbsp;·&nbsp; Supervisor = conditional edges &nbsp;·&nbsp; Managers = worker nodes</div>
+</div>
+</div>
+
+<div id="p-flow" class="panel">
+<div class="section-head">User: "ตรวจสอบ Stock WH01 Store KB-001 ต้องเพิ่มอะไร"</div>
+
+<div class="step-row">
+  <div class="step-num n-gray">0</div>
+  <div class="step-body">
+    <div class="step-who">API Gateway</div>
+    <div class="step-what">รับ message → สร้าง thread_id → ส่งเข้า LangGraph</div>
+    <div class="step-detail">POST /chat  { message, user_id, thread_id }</div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row" onclick="sendPrompt('Show me Executive Agent code that classifies this intent: ตรวจสอบ Stock WH01 Store KB-001 หน่อย ต้องเพิ่มอะไร')">
+  <div class="step-num n-coral">E</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#993C1D">Executive Agent — Intent Classification</div>
+    <div class="step-what">LLM อ่าน message → extract entities → map intent</div>
+    <div class="step-detail">intent: "stock_check_and_suggest_reorder"</div>
+    <div class="step-detail">entities: { wh: "WH01", store: "KB-001" }</div>
+    <div class="badge-row"><span class="badge b-coral">route → stock_check_reorder_flow</span></div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row" onclick="sendPrompt('Show me the stock_check_reorder_flow StateGraph with supervisor node')">
+  <div class="step-num n-purple">S</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#534AB7">Supervisor — เริ่ม flow: stock_check_reorder_flow</div>
+    <div class="step-what">กำหนด step แรก = WhereHouseAgent ตรวจ stock ก่อน</div>
+    <div class="step-detail">state: { wh="WH01", store="KB-001", stock_result=None, po_result=None }</div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row" onclick="sendPrompt('Show me WhereHouseAgent node that calls MCP store tools to check WH01 KB-001 stock')">
+  <div class="step-num n-teal">M1</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#0F6E56">WhereHouseAgent — ตรวจ Stock</div>
+    <div class="step-what">เรียก MCP store tools: get_stock_onhand(wh="WH01", store="KB-001")</div>
+    <div class="step-detail">→ result: { onhand: 0, min_stock: 50, items_below_min: ["SKU-A", "SKU-B", "SKU-C"] }</div>
+    <div class="badge-row">
+      <span class="badge b-teal">MCP: stock_levels tool</span>
+      <span class="badge b-amber">onhand = 0 → trigger condition</span>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row" onclick="sendPrompt('Show me the conditional edge in LangGraph that checks if stock is zero and routes to BuyerAgent')">
+  <div class="step-num n-purple">S</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#534AB7">Supervisor — ตรวจ Condition</div>
+    <div class="step-what">stock_onhand == 0 → route ต่อไป BuyerAgent</div>
+    <div class="step-detail">conditional_edge: check_stock_result → "need_reorder" → buyer_agent_node</div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row" onclick="sendPrompt('Show me BuyerAgent node that creates a purchase suggestion when stock is zero')">
+  <div class="step-num n-teal">M2</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#0F6E56">BuyerAgent — เสนอแผนซื้อ</div>
+    <div class="step-what">เรียก MCP buyer tools: get_supplier_price(skus), suggest_po(items, qty)</div>
+    <div class="step-detail">→ result: { supplier: "SUP-01", items: 3, total_qty: 150, est_cost: 45000 }</div>
+    <div class="badge-row">
+      <span class="badge b-teal">MCP: price_lookup + purchase_order tools</span>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row">
+  <div class="step-num n-gray">R</div>
+  <div class="step-body">
+    <div class="step-who">Response synthesis → User</div>
+    <div class="step-what">สรุปผลรวม: stock status + รายการที่ต้องซื้อ + ราคา</div>
+    <div class="step-detail">stream กลับ WebApp ผ่าน SSE</div>
+  </div>
+</div>
+
+</div>
+
+<div id="p-branch" class="panel">
+<div class="section-head">Branch Logic — เมื่อ WhereHouseAgent พบว่า Stock = 0</div>
+
+<div class="step-row">
+  <div class="step-num n-teal">M1</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#0F6E56">WhereHouseAgent ส่ง result กลับ Supervisor</div>
+    <div class="step-detail">stock_result = { wh: "WH01", store: "KB-001", onhand: 0, shortage: ["SKU-A","SKU-B","SKU-C"] }</div>
+  </div>
+</div>
+
+<div class="decision-box">
+  <div class="decision-label">Supervisor conditional_edge ตรวจ 3 กรณี</div>
+  <div class="decision-text">onhand &gt; min → END (แค่รายงาน)</div>
+  <div class="decision-text">0 &lt; onhand &lt; min → WhereHouseAgent แนะนำ replenish จาก Main WH</div>
+  <div class="decision-text" style="font-weight:500;color:var(--color-text-primary)">onhand == 0 + Main WH ก็ไม่มี → BuyerAgent สั่งซื้อ ← กรณีนี้</div>
+</div>
+
+<div class="step-row" onclick="sendPrompt('Show me the full conditional edge function in Python for this 3-branch stock check logic')">
+  <div class="step-num n-purple">S</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#534AB7">Supervisor route ไป BuyerAgent</div>
+    <div class="step-what">ส่ง context ครบ: ไม่มีทั้ง store และ WH หลัก</div>
+    <div class="step-detail">state.shortage_items = ["SKU-A","SKU-B","SKU-C"]</div>
+    <div class="step-detail">state.source = "external_purchase_required"</div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row" onclick="sendPrompt('Show me BuyerAgent PydanticAI code with input schema for shortage items and output schema for PO suggestion')">
+  <div class="step-num n-teal">M2</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#0F6E56">BuyerAgent รับงาน</div>
+    <div class="step-what">PydanticAI Input schema ที่รับมา</div>
+    <div class="step-detail">class BuyerInput(BaseModel):</div>
+    <div class="step-detail">&nbsp;&nbsp;shortage_items: list[str]</div>
+    <div class="step-detail">&nbsp;&nbsp;target_store: str  # KB-001</div>
+    <div class="step-detail">&nbsp;&nbsp;target_wh: str     # WH01</div>
+    <div class="badge-row"><span class="badge b-coral">ถ้า LLM ตอบผิด schema → PydanticAI retry อัตโนมัติ</span></div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row" onclick="sendPrompt('What MCP buyer tools does BuyerAgent call to create a purchase order suggestion?')">
+  <div class="step-num n-amber">MCP</div>
+  <div class="step-body">
+    <div class="step-who" style="color:#854F0B">MCP Buyer Tools ที่ถูกเรียก</div>
+    <div class="step-what">get_supplier_list(items) → เลือก supplier ที่ดีที่สุด</div>
+    <div class="step-what">get_price_quote(supplier, items) → ได้ราคา</div>
+    <div class="step-what">draft_purchase_order(supplier, items, qty) → ร่าง PO</div>
+    <div class="step-detail">→ PO draft: SUP-01 | SKU-A×50 SKU-B×60 SKU-C×40 | 45,000 THB</div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<div class="step-row">
+  <div class="step-num n-gray">R</div>
+  <div class="step-body">
+    <div class="step-who">Response ที่ User เห็น</div>
+    <div class="step-what">Stock WH01 / Store KB-001: ไม่มี onhand ทั้ง store และ WH หลัก</div>
+    <div class="step-what">แนะนำสั่งซื้อ 3 รายการจาก SUP-01 รวม 45,000 บาท</div>
+    <div class="step-what">ต้องการยืนยัน PO หรือปรับ qty ก่อนส่งไหม?</div>
+    <div class="badge-row">
+      <span class="badge b-green">Human-in-the-loop: รอ confirm ก่อน submit PO จริง</span>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('p-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
