@@ -2,7 +2,9 @@
 
 ### **The Open-Source Agentic Planning OS (Pure MCP Architecture)**
 
-**Axon** is a next-generation Supply Chain Planning (ASCP) framework built for the **Agentic AI era**. Unlike legacy systems that rely on direct database connections, Axon is **100% MCP-native**. It decouples "Enterprise Perception" from "Decision Cognition," treating every ERP and Knowledge Base as a standardized service.
+**Axon** is a next-generation Supply Chain Planning (ASCP) framework built for the **Agentic AI era**. Unlike legacy systems that rely on direct database connections, Axon is **100% MCP-native**. It is designed as an **AI-native planning and orchestration layer** that sits above ERP systems and turns demand, inventory, procurement, and operational signals into coordinated decisions and actionable workflows.
+
+In practical terms, Axon is an **agentic supply chain planning nerve system for modern ERPs**: it connects ERP execution, planning logic, and multi-agent reasoning without coupling the core planning engine to any one system of record.
 
 ---
 
@@ -14,6 +16,29 @@
 * **Universal Semantic Schema**: A unified Pydantic-based data language (`axon.core.schema`) that translates diverse MCP tool outputs into a single planning context.
 * **Autonomous Negotiation**: A LangGraph-powered "Conflict Resolution" engine where 10+ departmental agents negotiate to find the highest utility outcome.
 * **Self-Improving Logic**: An Experience Ledger that records the performance of AI-generated plans to refine future reasoning.
+* **ERP-Agnostic Planning Layer**: Works as a decision and orchestration layer above systems like Oracle EBS, SAP, and Odoo rather than replacing them.
+* **Human-in-the-Loop Ready**: Designed for approval gates, explainability, and enterprise-safe operational decision support.
+
+---
+
+## 🚀 Why Axon
+
+Most systems solve only one part of the operational planning problem:
+
+* **ERPs** are good at recording and executing transactions.
+* **Planning tools** are good at generating forecasts or recommendations.
+* **Agent frameworks** are good at orchestrating AI workflows.
+
+But supply chain teams need all three to work together.
+
+Axon bridges that gap by combining:
+
+* **planning intelligence**
+* **workflow orchestration**
+* **ERP-connected execution context**
+* **agentic decision support**
+
+That makes Axon more than an ERP integration and more than a generic agent framework — it is a **planning brain and coordination layer** for supply chain operations.
 
 ---
 
@@ -24,14 +49,14 @@ axon/
 ├── src/
 │   └── axon/                      # Installable Python package
 │       ├── __init__.py
-│       ├── core/                  # Logic &amp; Shared Governance
+│       ├── core/                  # Logic & Shared Governance
 │       │   ├── schema/            # Universal Semantic Models (Pydantic v2)
 │       │   │   ├── base.py        # Demand, Supply, Allocation, MCPToolOutput
-│       │   │   ├── demand.py      # Forecast &amp; Sales models
-│       │   │   ├── supply.py      # Inventory &amp; Production models
-│       │   │   └── allocation.py  # Matching &amp; Optimization models
+│       │   │   ├── demand.py      # Forecast & Sales models
+│       │   │   ├── supply.py      # Inventory & Production models
+│       │   │   └── allocation.py  # Matching & Optimization models
 │       │   ├── config.py          # Typed settings (pydantic-settings)
-│       │   ├── learning/          # Experience Ledger &amp; Decision Memory
+│       │   ├── learning/          # Experience Ledger & Decision Memory
 │       │   └── telemetry/         # Logfire / OpenTelemetry
 │       │
 │       ├── connectors/            # Perception Layer (Pure MCP Clients)
@@ -61,14 +86,13 @@ axon/
 │   ├── mcp-tools.md
 │   └── adr/
 ├── tests/                         # Simulation & Integration tests
-├── infra/                         # Docker Compose &amp; deployment
+├── infra/                         # Docker Compose & deployment
 │   └── docker-compose.yml
-├── pyproject.toml                 # Build &amp; Dependencies
+├── pyproject.toml                 # Build & Dependencies
 ├── requirements.txt               # Full tech stack (pip install)
 ├── requirements-dev.txt           # Dev tooling (pytest, ruff, mypy)
 ├── AGENTS.md                      # Agent instructions (OpenAI / Cursor / Copilot)
 └── README.md                      # Documentation
-
 ```
 
 ---
@@ -88,6 +112,27 @@ See [docs/mcp-tools.md](docs/mcp-tools.md) for the full tool catalog with parame
 8. **QC (Quality Control)**: Inspection & Rework Logic
 9. **PD (Product Development)**: BOM Engineering & New Product Intro
 10. **Maintenance**: Predictive Downtime & Asset Health
+
+---
+
+## 🧭 Competitive Positioning
+
+Axon sits at the intersection of:
+
+* **supply chain planning**
+* **ERP operations**
+* **agentic AI orchestration**
+
+Compared with systems like **Odoo**, **ERPNext**, **OpenBoxes**, **Apache OFBiz**, and **Tryton**, Axon focuses on the layer above transaction execution: **decision-making, planning orchestration, and intelligent operational coordination**.
+
+Compared with general-purpose agent systems like **PraisonAI** or **OpenAgentsControl**, Axon is **domain-specific** and designed around the realities of supply chain workflows and ERP-connected environments.
+
+In short:
+
+* **ERP systems** execute transactions.
+* **Inventory systems** manage stock and movement.
+* **Agent frameworks** orchestrate generic AI workflows.
+* **Axon** connects planning intelligence, workflow coordination, and ERP-aware decision-making.
 
 ---
 
@@ -139,11 +184,19 @@ See [docs/mcp-tools.md](docs/mcp-tools.md) for the full tool catalog with parame
 
 ---
 
-*For the Agentic Era | [nsanguan/axon](https://github.com/nsanguan/axon)
+## 📌 Positioning Summary
+
+**Axon is not just another ERP, not just another forecasting tool, and not just another generic agent framework.**
+
+It is an **AI-native planning and orchestration layer** for modern ERP environments — purpose-built to help supply chain teams move from fragmented planning processes to intelligent, explainable, and increasingly autonomous operations.
+
+---
+
+*For the Agentic Era | [nsanguan/axon](https://github.com/nsanguan/axon)*
 
 ---
 
 **Architect's Note:**
 By going **Strictly MCP**, you've made the system incredibly clean. The `src/axon/connectors/mcp_oracle_ebs/` 
 module no longer contains SQL or JDBC drivers; instead, it contains **Tool Definitions** and **Response Parsers**.
- This is the most future-proof way to build AI-driven enterprise software.
+This is the most future-proof way to build AI-driven enterprise software.
