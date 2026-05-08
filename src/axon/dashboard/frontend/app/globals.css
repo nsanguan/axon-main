@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --axon-primary: #2563eb;
+  --axon-success: #16a34a;
+  --axon-warning: #ca8a04;
+  --axon-danger: #dc2626;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}

@@ -1,0 +1,35 @@
+[project]
+name = "axon-ascp"
+version = "0.1.0"
+description = "Axon — AI-Native Supply Chain Planning Engine (Agentic-ASCP). ERP-agnostic via MCP."
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "fastmcp>=2.0",
+    "pydantic-ai[anthropic]>=0.0.1",
+    "langgraph>=0.2",
+    "httpx>=0.27",
+    "anthropic>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["core*", "agents*", "orchestrator*", "adapters*", "config*", "mcp_servers*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

@@ -1,0 +1,44 @@
+# =============================================================================
+# Axon — Full Tech Stack Requirements
+# =============================================================================
+# Install: pip install -r requirements.txt
+# Dev extras: pip install -r requirements.txt -r requirements-dev.txt
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Agentic AI Framework
+# ---------------------------------------------------------------------------
+pydantic>=2.8.0,<3           # Data validation & universal schema (Pydantic v2)
+pydantic-ai>=0.0.12          # Type-safe AI agents with MCP integration
+langgraph>=0.2.0             # Stateful multi-agent orchestration (StateGraph)
+mcp>=1.4.0                   # Model Context Protocol client/server
+
+# ---------------------------------------------------------------------------
+# Configuration & Settings
+# ---------------------------------------------------------------------------
+pydantic-settings>=2.5.0     # Typed settings from env/.env (pydantic-settings)
+python-dotenv>=1.0.0         # .env file loader
+pyyaml>=6.0                  # YAML config & simulation scenario files
+
+# ---------------------------------------------------------------------------
+# Network & Protocol
+# ---------------------------------------------------------------------------
+httpx>=0.28.0                # Async HTTP client for MCP server connections
+
+# ---------------------------------------------------------------------------
+# Data Infrastructure
+# ---------------------------------------------------------------------------
+redis>=5.2.0                 # MCP response cache & tool-call deduplication
+asyncpg>=0.30.0              # Async PostgreSQL driver for LangGraph state
+psycopg2-binary>=2.9.10      # Sync PostgreSQL driver (backup / utility)
+
+# ---------------------------------------------------------------------------
+# Observability & Logging
+# ---------------------------------------------------------------------------
+logfire>=0.45.0              # OpenTelemetry tracing, spans, agent instrumentation
+structlog>=24.0.0            # Structured logging
+
+# ---------------------------------------------------------------------------
+# Resilience & Utilities
+# ---------------------------------------------------------------------------
+tenacity>=9.0.0              # Retry logic & circuit breaker
