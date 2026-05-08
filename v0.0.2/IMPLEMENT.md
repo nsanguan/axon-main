@@ -172,5 +172,5 @@ MONITORING
 
 ---
 
-**Status:** *Phase 1 Initialization — buildable project scaffold complete (pyproject.toml, infra/docker-compose.yml, config, schema stubs)*
+**Status:** *Phase 5 Complete — Write-back, RBAC, caching, E2E property tests*
 **GitHub:** [nsanguan/axon](https://github.com/nsanguan/axon)

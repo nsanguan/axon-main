@@ -1,0 +1,67 @@
+# Axon E2E Scenario: Basic Supply-Demand Match
+# A simple planning cycle with 3 demands and 3 supplies.
+# Expected: all demands matched, no conflicts, auto-approved.
+
+name: "Basic Supply-Demand Match"
+description: "3 demands, 3 supplies, straightforward matching"
+
+demands:
+  - item_id: "FG-001"
+    quantity: 5000
+    priority: 90
+    confidence: 0.95
+    source: "sales_order"
+    customer: "Boeing"
+    period_start: "2026-06-01"
+    period_end: "2026-06-30"
+
+  - item_id: "RM-001"
+    quantity: 1200
+    priority: 60
+    confidence: 0.80
+    source: "forecast"
+    period_start: "2026-05-15"
+    period_end: "2026-06-15"
+
+  - item_id: "FG-002"
+    quantity: 800
+    priority: 40
+    confidence: 0.99
+    source: "safety_stock"
+    period_start: "2026-07-01"
+    period_end: "2026-07-31"
+
+supplies:
+  - item_id: "FG-001"
+    quantity: 3000
+    source: "on_hand"
+    location: "WH-01"
+    available_from: "2026-05-01"
+    available_to: "2026-12-31"
+
+  - item_id: "FG-001"
+    quantity: 2500
+    source: "wip"
+    wip_job: "WIP-10234"
+    arrival_date: "2026-06-10"
+
+  - item_id: "RM-001"
+    quantity: 1500
+    source: "purchase_order"
+    supplier: "TitaniumMet Inc"
+    arrival_date: "2026-06-20"
+
+business_weights:
+  cost: 0.3
+  delivery: 0.3
+  quality: 0.2
+  sustainability: 0.1
+  flexibility: 0.1
+
+max_negotiation_rounds: 5
+auto_approve: false
+
+expected_allocation_count: 3
+expected_confidence_min: 0.8
+expected_deadlock: false
+expected_violations: 0

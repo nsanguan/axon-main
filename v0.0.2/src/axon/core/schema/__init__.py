@@ -5,8 +5,8 @@ before any agent reasoning or orchestration occurs.
 """
 
 from axon.core.schema.base import (
-    Allocation,
     AgentProposal,
+    Allocation,
     Demand,
     EntityRef,
     MCPToolOutput,

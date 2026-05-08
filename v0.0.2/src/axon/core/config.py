@@ -63,6 +63,34 @@ class AgentDefaults(BaseSettings):
     negotiation_rounds: int = 5
 
 
+class WriteBackConfig(BaseSettings):
+    """Secure write-back configuration — HITL gating thresholds."""
+
+    enabled: bool = True
+    purchase_req_threshold: float = 10000.0
+    schedule_shift_days_threshold: int = 7
+    audit_all_writes: bool = True
+
+
+class RBACConfig(BaseSettings):
+    """Role-based access control configuration."""
+
+    enabled: bool = True
+    strict_mode: bool = False  # When True, blocks unregistered tool-agent pairs
+
+
+class LearningConfig(BaseSettings):
+    """Experience Ledger, embedder, and retrieval configuration."""
+
+    enabled: bool = True
+    retention_hot_days: int = 90
+    retention_warm_days: int = 730
+    embedding_dimensions: int = 384
+    embedder_type: str = "tag"  # "tag" or "openai"
+    similarity_top_k: int = 5
+    auto_retention: bool = True
+
+
 # =============================================================================
 # Root Settings
 # =============================================================================
@@ -100,6 +128,13 @@ class Settings(BaseSettings):
 
     # Agents
     agent_defaults: AgentDefaults = AgentDefaults()
+
+    # Write-back & RBAC (Phase 5)
+    writeback: WriteBackConfig = WriteBackConfig()
+    rbac: RBACConfig = RBACConfig()
+
+    # Learning & Experience Ledger
+    learning: LearningConfig = LearningConfig()
 
     # Security
     secret_key: SecretStr = SecretStr("insecure-default-change-in-production")

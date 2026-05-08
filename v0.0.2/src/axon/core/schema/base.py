@@ -17,12 +17,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
-from typing import Any
+from enum import StrEnum
+from typing import Any, ClassVar
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # =============================================================================
 # Primitives
@@ -115,7 +114,7 @@ class Allocation(BaseModel):
 # =============================================================================
 
 
-class ProposalStatus(str, Enum):
+class ProposalStatus(StrEnum):
     PROPOSED = "proposed"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
@@ -162,12 +161,9 @@ class SemanticTransformer(BaseModel):
         transform(output: MCPToolOutput) -> list[Demand | Supply]
     """
 
-    source_system: str
-    supported_tools: list[str]
+    source_system: ClassVar[str] = ""
+    supported_tools: ClassVar[list[str]] = []
 
     def can_handle(self, output: MCPToolOutput) -> bool:
         """Return True if this transformer handles the given MCP output."""
-        return (
-            output.server_name == self.source_system
-            and output.tool_name in self.supported_tools
-        )
+        return output.server_name == self.source_system and output.tool_name in self.supported_tools
