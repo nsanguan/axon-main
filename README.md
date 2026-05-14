@@ -328,6 +328,9 @@ API reference: `http://localhost:8200/docs` (Swagger UI)
 *For the Agentic Era | [nsanguan/axon](https://github.com/nsanguan/axon)*
 
 ---
+##  AXON LLMWiki Server
+
+https://axon-wiki.era-ai-consultant.com/
 
 **Architect's Note:**
 By going **Strictly MCP**, you've made the system incredibly clean. The `src/axon/connectors/mcp_oracle_ebs/` 
