@@ -1,6 +1,6 @@
 # 🧠 Axon
 
-### **The Open-Source Agentic Planning OS (Pure MCP Architecture)**
+### **The Open-Source Agentic Advance Supply Chain Planning OS (Pure MCP Architecture)**
 
 **Axon** is a next-generation Supply Chain Planning (ASCP) framework built for the **Agentic AI era**. Unlike legacy systems that rely on direct database connections, Axon is **100% MCP-native**. It is designed as an **AI-native planning and orchestration layer** that sits above ERP systems and turns demand, inventory, procurement, and operational signals into coordinated decisions and actionable workflows.
 
