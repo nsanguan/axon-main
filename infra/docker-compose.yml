@@ -13,13 +13,18 @@
 #                    ▼                                    ▼           │
 #           ┌───────────────┐  ┌──────────────┐  ┌──────────────┐    │
 #           │ agent-comm    │  │ agent-ops    │  │ agent-tech   │    │
-#           │ :8101         │  │ :8102        │  │ :8103        │    │
+#           │ :8201         │  │ :8202        │  │ :8203        │    │
 #           │ Sales         │  │ Production   │  │ QA,QC,Mainte │    │
 #           │ Procurement   │  │ Logistics    │  │ PD           │    │
 #           │ Finance       │  │ Warehouse    │  │              │    │
 #           └───────────────┘  └──────────────┘  └──────────────┘    │
 #                    │              │                │               │
 #                    └──────────────┴────────────────┘               │
+#                                   │                                │
+#                          ┌────────▼────────┐                      │
+#                          │  EBS MCP Agent  │ (external project)   │
+#                          │  ports 8001-8111│                      │
+#                          └─────────────────┘                      │
 #                                   │                                │
 #                          ┌────────▼────────┐            ┌─────────▼────────┐
 #                          │  PostgreSQL     │            │     Redis        │
@@ -62,12 +67,27 @@ services:
       args:
         AGENT_GROUP: commercial
     ports:
-      - "8101:8101"
+      - "8201:8101"
     environment:
       - AXON_AGENT_GROUP=commercial
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
       - AXON_REDIS__URL=redis://redis:6379/0
       - AXON_LOG_LEVEL=INFO
+      # EBS MCP Agent servers (external project, running on host or separate containers)
+      - AXON_MCP_ORACLE_EBS__URL=${AXON_MCP_ORACLE_EBS__URL:-http://host.docker.internal:8003/mcp}
+      - AXON_MCP_AGENT_BUYER__URL=${AXON_MCP_AGENT_BUYER__URL:-http://host.docker.internal:8001/mcp}
+      - AXON_MCP_AGENT_STORE__URL=${AXON_MCP_AGENT_STORE__URL:-http://host.docker.internal:8002/mcp}
+      - AXON_MCP_EBS_DEMAND__URL=${AXON_MCP_EBS_DEMAND__URL:-http://host.docker.internal:8102/mcp}
+      - AXON_MCP_EBS_SUPPLY__URL=${AXON_MCP_EBS_SUPPLY__URL:-http://host.docker.internal:8103/mcp}
+      - AXON_MCP_EBS_PRODUCTION__URL=${AXON_MCP_EBS_PRODUCTION__URL:-http://host.docker.internal:8104/mcp}
+      - AXON_MCP_EBS_LOGISTICS__URL=${AXON_MCP_EBS_LOGISTICS__URL:-http://host.docker.internal:8105/mcp}
+      - AXON_MCP_EBS_QUALITY__URL=${AXON_MCP_EBS_QUALITY__URL:-http://host.docker.internal:8106/mcp}
+      - AXON_MCP_EBS_ASSET__URL=${AXON_MCP_EBS_ASSET__URL:-http://host.docker.internal:8107/mcp}
+      - AXON_MCP_EBS_FINANCE__URL=${AXON_MCP_EBS_FINANCE__URL:-http://host.docker.internal:8108/mcp}
+      - AXON_MCP_EBS_ENGINEERING__URL=${AXON_MCP_EBS_ENGINEERING__URL:-http://host.docker.internal:8109/mcp}
+      - AXON_MCP_EBS_WAREHOUSE__URL=${AXON_MCP_EBS_WAREHOUSE__URL:-http://host.docker.internal:8111/mcp}
+      # LLMWiki Policy Server
+      - AXON_MCP_LLMWIKI__URL=${AXON_MCP_LLMWIKI__URL:-http://host.docker.internal:8000/sse}
     depends_on:
       redis:
         condition: service_healthy
@@ -84,12 +104,27 @@ services:
       args:
         AGENT_GROUP: operations
     ports:
-      - "8102:8102"
+      - "8202:8102"
     environment:
       - AXON_AGENT_GROUP=operations
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
       - AXON_REDIS__URL=redis://redis:6379/0
       - AXON_LOG_LEVEL=INFO
+      # EBS MCP Agent servers
+      - AXON_MCP_ORACLE_EBS__URL=${AXON_MCP_ORACLE_EBS__URL:-http://host.docker.internal:8003/mcp}
+      - AXON_MCP_AGENT_BUYER__URL=${AXON_MCP_AGENT_BUYER__URL:-http://host.docker.internal:8001/mcp}
+      - AXON_MCP_AGENT_STORE__URL=${AXON_MCP_AGENT_STORE__URL:-http://host.docker.internal:8002/mcp}
+      - AXON_MCP_EBS_DEMAND__URL=${AXON_MCP_EBS_DEMAND__URL:-http://host.docker.internal:8102/mcp}
+      - AXON_MCP_EBS_SUPPLY__URL=${AXON_MCP_EBS_SUPPLY__URL:-http://host.docker.internal:8103/mcp}
+      - AXON_MCP_EBS_PRODUCTION__URL=${AXON_MCP_EBS_PRODUCTION__URL:-http://host.docker.internal:8104/mcp}
+      - AXON_MCP_EBS_LOGISTICS__URL=${AXON_MCP_EBS_LOGISTICS__URL:-http://host.docker.internal:8105/mcp}
+      - AXON_MCP_EBS_QUALITY__URL=${AXON_MCP_EBS_QUALITY__URL:-http://host.docker.internal:8106/mcp}
+      - AXON_MCP_EBS_ASSET__URL=${AXON_MCP_EBS_ASSET__URL:-http://host.docker.internal:8107/mcp}
+      - AXON_MCP_EBS_FINANCE__URL=${AXON_MCP_EBS_FINANCE__URL:-http://host.docker.internal:8108/mcp}
+      - AXON_MCP_EBS_ENGINEERING__URL=${AXON_MCP_EBS_ENGINEERING__URL:-http://host.docker.internal:8109/mcp}
+      - AXON_MCP_EBS_WAREHOUSE__URL=${AXON_MCP_EBS_WAREHOUSE__URL:-http://host.docker.internal:8111/mcp}
+      # LLMWiki Policy Server
+      - AXON_MCP_LLMWIKI__URL=${AXON_MCP_LLMWIKI__URL:-http://host.docker.internal:8000/sse}
     depends_on:
       redis:
         condition: service_healthy
@@ -106,12 +141,27 @@ services:
       args:
         AGENT_GROUP: technical
     ports:
-      - "8103:8103"
+      - "8203:8103"
     environment:
       - AXON_AGENT_GROUP=technical
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
       - AXON_REDIS__URL=redis://redis:6379/0
       - AXON_LOG_LEVEL=INFO
+      # EBS MCP Agent servers
+      - AXON_MCP_ORACLE_EBS__URL=${AXON_MCP_ORACLE_EBS__URL:-http://host.docker.internal:8003/mcp}
+      - AXON_MCP_AGENT_BUYER__URL=${AXON_MCP_AGENT_BUYER__URL:-http://host.docker.internal:8001/mcp}
+      - AXON_MCP_AGENT_STORE__URL=${AXON_MCP_AGENT_STORE__URL:-http://host.docker.internal:8002/mcp}
+      - AXON_MCP_EBS_DEMAND__URL=${AXON_MCP_EBS_DEMAND__URL:-http://host.docker.internal:8102/mcp}
+      - AXON_MCP_EBS_SUPPLY__URL=${AXON_MCP_EBS_SUPPLY__URL:-http://host.docker.internal:8103/mcp}
+      - AXON_MCP_EBS_PRODUCTION__URL=${AXON_MCP_EBS_PRODUCTION__URL:-http://host.docker.internal:8104/mcp}
+      - AXON_MCP_EBS_LOGISTICS__URL=${AXON_MCP_EBS_LOGISTICS__URL:-http://host.docker.internal:8105/mcp}
+      - AXON_MCP_EBS_QUALITY__URL=${AXON_MCP_EBS_QUALITY__URL:-http://host.docker.internal:8106/mcp}
+      - AXON_MCP_EBS_ASSET__URL=${AXON_MCP_EBS_ASSET__URL:-http://host.docker.internal:8107/mcp}
+      - AXON_MCP_EBS_FINANCE__URL=${AXON_MCP_EBS_FINANCE__URL:-http://host.docker.internal:8108/mcp}
+      - AXON_MCP_EBS_ENGINEERING__URL=${AXON_MCP_EBS_ENGINEERING__URL:-http://host.docker.internal:8109/mcp}
+      - AXON_MCP_EBS_WAREHOUSE__URL=${AXON_MCP_EBS_WAREHOUSE__URL:-http://host.docker.internal:8111/mcp}
+      # LLMWiki Policy Server
+      - AXON_MCP_LLMWIKI__URL=${AXON_MCP_LLMWIKI__URL:-http://host.docker.internal:8000/sse}
     depends_on:
       redis:
         condition: service_healthy
@@ -137,6 +187,21 @@ services:
       - AXON_AGENT_OPERATIONS__URL=http://agent-operations:8102/mcp
       - AXON_AGENT_TECHNICAL__URL=http://agent-technical:8103/mcp
       - AXON_LOG_LEVEL=INFO
+      # EBS MCP Agent servers
+      - AXON_MCP_ORACLE_EBS__URL=${AXON_MCP_ORACLE_EBS__URL:-http://host.docker.internal:8003/mcp}
+      - AXON_MCP_AGENT_BUYER__URL=${AXON_MCP_AGENT_BUYER__URL:-http://host.docker.internal:8001/mcp}
+      - AXON_MCP_AGENT_STORE__URL=${AXON_MCP_AGENT_STORE__URL:-http://host.docker.internal:8002/mcp}
+      - AXON_MCP_EBS_DEMAND__URL=${AXON_MCP_EBS_DEMAND__URL:-http://host.docker.internal:8102/mcp}
+      - AXON_MCP_EBS_SUPPLY__URL=${AXON_MCP_EBS_SUPPLY__URL:-http://host.docker.internal:8103/mcp}
+      - AXON_MCP_EBS_PRODUCTION__URL=${AXON_MCP_EBS_PRODUCTION__URL:-http://host.docker.internal:8104/mcp}
+      - AXON_MCP_EBS_LOGISTICS__URL=${AXON_MCP_EBS_LOGISTICS__URL:-http://host.docker.internal:8105/mcp}
+      - AXON_MCP_EBS_QUALITY__URL=${AXON_MCP_EBS_QUALITY__URL:-http://host.docker.internal:8106/mcp}
+      - AXON_MCP_EBS_ASSET__URL=${AXON_MCP_EBS_ASSET__URL:-http://host.docker.internal:8107/mcp}
+      - AXON_MCP_EBS_FINANCE__URL=${AXON_MCP_EBS_FINANCE__URL:-http://host.docker.internal:8108/mcp}
+      - AXON_MCP_EBS_ENGINEERING__URL=${AXON_MCP_EBS_ENGINEERING__URL:-http://host.docker.internal:8109/mcp}
+      - AXON_MCP_EBS_WAREHOUSE__URL=${AXON_MCP_EBS_WAREHOUSE__URL:-http://host.docker.internal:8111/mcp}
+      # LLMWiki Policy Server
+      - AXON_MCP_LLMWIKI__URL=${AXON_MCP_LLMWIKI__URL:-http://host.docker.internal:8000/sse}
     depends_on:
       redis:
         condition: service_healthy

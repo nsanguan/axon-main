@@ -8,14 +8,17 @@ Exposes tools on port 8101 by default.
 
 from __future__ import annotations
 
-from fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP
 
 from axon.agents.commercial import FinanceAgent, ProcurementAgent, SalesAgent
+from axon.agents.connector_builder import build_connectors
 from axon.core.telemetry import log_event
 
 server = FastMCP(
     "axon-agent-commercial",
-    description="Commercial agent MCP server: Sales, Procurement, Finance",
+    instructions="Commercial agent MCP server: Sales, Procurement, Finance",
+    host="0.0.0.0",
+    port=8101,
 )
 
 
@@ -47,7 +50,7 @@ async def commercial_reason(
     if not agent_cls:
         return {"error": f"Unknown commercial agent: {agent_id}"}
 
-    agent = agent_cls()
+    agent = agent_cls(build_connectors())
     proposal = await agent.propose(
         {"context": planning_context, "insights": past_insights or []}
     )
@@ -66,4 +69,4 @@ async def list_commercial_agents() -> list[str]:
 
 
 if __name__ == "__main__":
-    server.run(host="0.0.0.0", port=8101)
+    server.run(transport="sse")
