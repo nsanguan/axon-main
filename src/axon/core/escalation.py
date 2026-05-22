@@ -186,13 +186,16 @@ class SeverityScorer:
         HITL is required when:
         - Severity score > DIRECTOR_MAX (Executive level)
         - Event type is in ALWAYS_EXECUTIVE
-        - VIP priority > 80 and score > MANAGER_MAX
+        - VIP priority > 80 (mandatory per AGENTS.md spec)
+        - VIP priority > 80 and score > MANAGER_MAX (belt-and-suspenders)
         """
         if event_type in ALWAYS_EXECUTIVE:
             return True
+        if priority > 80:
+            return True
         if score > DIRECTOR_MAX:
             return True
-        return bool(priority > 80 and score > MANAGER_MAX)
+        return bool(score > MANAGER_MAX)
 
 
 # =============================================================================
@@ -248,7 +251,7 @@ def compute_severity_from_state(state: dict[str, Any]) -> float:
     if not demands:
         return 0.0
     impact = sum(
-        d.get("quantity", 0) * d.get("priority", 50) / 100 for d in demands
+        float(d.get("quantity", 0)) * d.get("priority", 50) / 100 for d in demands
     )
 
     scorer = SeverityScorer()
