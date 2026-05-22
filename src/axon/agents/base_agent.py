@@ -8,7 +8,6 @@ domain, and system_prompt.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
@@ -18,7 +17,6 @@ from pydantic_ai import Agent as PydanticAgent
 
 from axon.core.schema import AgentProposal, ProposalStatus
 from axon.core.telemetry import log_event
-
 
 # =============================================================================
 # Structured result the LLM must return

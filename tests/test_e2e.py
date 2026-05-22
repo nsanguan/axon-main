@@ -27,19 +27,20 @@ from axon.core.schema import (
     Allocation,
     Demand,
     EntityRef,
-    NegotiationRound,
     Period,
     ProposalStatus,
     Supply,
 )
 from axon.orchestrator.master_graph import MasterGraph
 
-
 # =============================================================================
 # Helpers
 # =============================================================================
 
-def _make_demand(item_id: str = "FG-001", qty: float = 1000.0, priority: int = 50) -> dict[str, Any]:
+
+def _make_demand(
+    item_id: str = "FG-001", qty: float = 1000.0, priority: int = 50
+) -> dict[str, Any]:
     from datetime import UTC, datetime
 
     return Demand(
@@ -139,7 +140,9 @@ async def test_master_graph_runs_full_cycle() -> None:
     # (avoids needing LLM keys while still exercising the rest of the graph)
     with (
         patch("axon.orchestrator.master_graph.node_fetch", new_callable=AsyncMock) as mock_fetch,
-        patch("axon.orchestrator.master_graph.node_transform", new_callable=AsyncMock) as mock_transform,
+        patch(
+            "axon.orchestrator.master_graph.node_transform", new_callable=AsyncMock
+        ) as mock_transform,
         patch("axon.orchestrator.master_graph.node_reason", new_callable=AsyncMock) as mock_reason,
     ):
         mock_fetch.return_value = {
@@ -191,7 +194,9 @@ async def test_master_graph_handles_empty_proposals() -> None:
 
     with (
         patch("axon.orchestrator.master_graph.node_fetch", new_callable=AsyncMock) as mock_fetch,
-        patch("axon.orchestrator.master_graph.node_transform", new_callable=AsyncMock) as mock_transform,
+        patch(
+            "axon.orchestrator.master_graph.node_transform", new_callable=AsyncMock
+        ) as mock_transform,
         patch("axon.orchestrator.master_graph.node_reason", new_callable=AsyncMock) as mock_reason,
     ):
         mock_fetch.return_value = {
@@ -227,15 +232,18 @@ async def test_master_graph_deadlock_triggers_hitl() -> None:
 
     # Two agents propose conflicting high-utility plans to force deadlock evaluation
     conflicting_proposals = {
-        f"agent_{i}": _make_proposal(f"agent_{i}", 0.5 + i * 0.05)
-        for i in range(5)
+        f"agent_{i}": _make_proposal(f"agent_{i}", 0.5 + i * 0.05) for i in range(5)
     }
 
     with (
         patch("axon.orchestrator.master_graph.node_fetch", new_callable=AsyncMock) as mock_fetch,
-        patch("axon.orchestrator.master_graph.node_transform", new_callable=AsyncMock) as mock_transform,
+        patch(
+            "axon.orchestrator.master_graph.node_transform", new_callable=AsyncMock
+        ) as mock_transform,
         patch("axon.orchestrator.master_graph.node_reason", new_callable=AsyncMock) as mock_reason,
-        patch("axon.orchestrator.master_graph.node_negotiate", new_callable=AsyncMock) as mock_negotiate,
+        patch(
+            "axon.orchestrator.master_graph.node_negotiate", new_callable=AsyncMock
+        ) as mock_negotiate,
     ):
         mock_fetch.return_value = {
             "raw_demands": [],
@@ -247,7 +255,9 @@ async def test_master_graph_deadlock_triggers_hitl() -> None:
         mock_reason.return_value = {"agent_proposals": conflicting_proposals}
         # Force a deadlock result
         mock_negotiate.return_value = {
-            "negotiation_rounds": [{"round_number": 5, "resolved": False, "resolution": "NEGOTIATION_DEADLOCK"}],
+            "negotiation_rounds": [
+                {"round_number": 5, "resolved": False, "resolution": "NEGOTIATION_DEADLOCK"}
+            ],
             "final_plan": [],
             "deadlock": True,
             "business_weights": PLANNING_REQUEST["business_weights"],
@@ -268,7 +278,9 @@ async def test_master_graph_deadlock_triggers_hitl() -> None:
     assert result.get("hitl_required", False) or result.get("escalation_level") in (
         "director",
         "executive",
-    ), f"Deadlock did not trigger HITL: {result.get('hitl_required')}, level={result.get('escalation_level')}"
+    ), (
+        f"Deadlock did not trigger HITL: {result.get('hitl_required')}, level={result.get('escalation_level')}"
+    )
 
 
 @pytest.mark.asyncio
@@ -281,7 +293,9 @@ async def test_master_graph_vip_demand_triggers_hitl() -> None:
 
     with (
         patch("axon.orchestrator.master_graph.node_fetch", new_callable=AsyncMock) as mock_fetch,
-        patch("axon.orchestrator.master_graph.node_transform", new_callable=AsyncMock) as mock_transform,
+        patch(
+            "axon.orchestrator.master_graph.node_transform", new_callable=AsyncMock
+        ) as mock_transform,
         patch("axon.orchestrator.master_graph.node_reason", new_callable=AsyncMock) as mock_reason,
     ):
         mock_fetch.return_value = {
@@ -304,6 +318,4 @@ async def test_master_graph_vip_demand_triggers_hitl() -> None:
 
             result = await graph.run({**PLANNING_REQUEST, "correlation_id": str(uuid4())})
 
-    assert result.get("hitl_required", False), (
-        "VIP demand (priority=95) did not trigger HITL"
-    )
+    assert result.get("hitl_required", False), "VIP demand (priority=95) did not trigger HITL"

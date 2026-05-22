@@ -456,7 +456,15 @@ class TestDashboardAPI:
         assert "max_rounds_before_deadlock" in data
 
     def test_pending_approvals_empty(self, client):
-        resp = client.get("/api/approvals/pending")
+        from unittest.mock import AsyncMock, patch
+
+        mock_board = AsyncMock()
+        mock_board.list_hitl_queue.return_value = []
+        with (
+            patch("axon.dashboard.backend.routes._get_board", return_value=mock_board),
+            patch("axon.dashboard.backend.routes.get_pending_approvals", return_value={}),
+        ):
+            resp = client.get("/api/approvals/pending")
         assert resp.status_code == 200
         assert resp.json() == []
 

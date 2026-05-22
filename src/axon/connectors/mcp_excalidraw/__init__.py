@@ -78,11 +78,14 @@ class ExcalidrawConnector:
             Diagram ID (UUID string).
         """
         diagram_id = str(uuid4())
-        await self._call_tool("create_diagram", {
-            "diagram_id": diagram_id,
-            "title": title,
-            "elements": elements or [],
-        })
+        await self._call_tool(
+            "create_diagram",
+            {
+                "diagram_id": diagram_id,
+                "title": title,
+                "elements": elements or [],
+            },
+        )
         log_event("info", "excalidraw_diagram_created", diagram_id=diagram_id, title=title)
         return diagram_id
 
@@ -100,10 +103,13 @@ class ExcalidrawConnector:
         Returns:
             True if successful.
         """
-        await self._call_tool("add_elements", {
-            "diagram_id": diagram_id,
-            "elements": elements,
-        })
+        await self._call_tool(
+            "add_elements",
+            {
+                "diagram_id": diagram_id,
+                "elements": elements,
+            },
+        )
         return True
 
     async def export_diagram(
@@ -120,10 +126,13 @@ class ExcalidrawConnector:
         Returns:
             Raw image bytes.
         """
-        await self._call_tool("export_diagram", {
-            "diagram_id": diagram_id,
-            "format": fmt,
-        })
+        await self._call_tool(
+            "export_diagram",
+            {
+                "diagram_id": diagram_id,
+                "format": fmt,
+            },
+        )
         return b""
 
     async def list_diagrams(self) -> list[dict[str, Any]]:
@@ -132,8 +141,12 @@ class ExcalidrawConnector:
 
     @staticmethod
     def make_rectangle(
-        x: float, y: float, width: float, height: float,
-        label: str = "", color: str = "#1971c2",
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        label: str = "",
+        color: str = "#1971c2",
     ) -> dict[str, Any]:
         """Create an Excalidraw rectangle element.
 
@@ -148,8 +161,10 @@ class ExcalidrawConnector:
         """
         return {
             "type": "rectangle",
-            "x": x, "y": y,
-            "width": width, "height": height,
+            "x": x,
+            "y": y,
+            "width": width,
+            "height": height,
             "backgroundColor": color,
             "strokeColor": "#000000",
             "strokeWidth": 1,
@@ -160,8 +175,10 @@ class ExcalidrawConnector:
 
     @staticmethod
     def make_arrow(
-        start_x: float, start_y: float,
-        end_x: float, end_y: float,
+        start_x: float,
+        start_y: float,
+        end_x: float,
+        end_y: float,
         label: str = "",
     ) -> dict[str, Any]:
         """Create an Excalidraw arrow element.
@@ -176,8 +193,10 @@ class ExcalidrawConnector:
         """
         return {
             "type": "arrow",
-            "x": start_x, "y": start_y,
-            "endX": end_x, "endY": end_y,
+            "x": start_x,
+            "y": start_y,
+            "endX": end_x,
+            "endY": end_y,
             "strokeColor": "#000000",
             "strokeWidth": 2,
             "roughness": 0,
@@ -187,7 +206,9 @@ class ExcalidrawConnector:
 
     @staticmethod
     def make_text(
-        x: float, y: float, text: str,
+        x: float,
+        y: float,
+        text: str,
         font_size: int = 16,
     ) -> dict[str, Any]:
         """Create an Excalidraw text element.
@@ -202,7 +223,8 @@ class ExcalidrawConnector:
         """
         return {
             "type": "text",
-            "x": x, "y": y,
+            "x": x,
+            "y": y,
             "text": text,
             "fontSize": font_size,
             "strokeColor": "#000000",
@@ -241,10 +263,16 @@ class ExcalidrawConnector:
         for i, d in enumerate(demands[:5]):
             name = d.get("item_name", d.get("item_native_id", f"Item {i}"))
             qty = d.get("quantity", 0)
-            elements.append(self.make_rectangle(
-                100, y_offset + i * 60, 180, 50,
-                f"{name} x{qty}", "#1971c2",
-            ))
+            elements.append(
+                self.make_rectangle(
+                    100,
+                    y_offset + i * 60,
+                    180,
+                    50,
+                    f"{name} x{qty}",
+                    "#1971c2",
+                )
+            )
 
         # Supplies column (right side)
         elements.append(self.make_text(500, 60, "Supplies", 20))
@@ -252,18 +280,29 @@ class ExcalidrawConnector:
             name = s.get("item_name", s.get("item_native_id", f"Supply {i}"))
             qty = s.get("quantity", 0)
             src = s.get("source", "unknown")
-            elements.append(self.make_rectangle(
-                500, 100 + i * 60, 180, 50,
-                f"{name} x{qty} ({src})", "#2e7d32",
-            ))
+            elements.append(
+                self.make_rectangle(
+                    500,
+                    100 + i * 60,
+                    180,
+                    50,
+                    f"{name} x{qty} ({src})",
+                    "#2e7d32",
+                )
+            )
 
         # Arrows connecting demands to supplies
         if allocations:
             for i, a in enumerate(allocations[:5]):
                 qty = a.get("allocated_quantity", 0)
-                elements.append(self.make_arrow(
-                    280, 85 + i * 60, 500, 125 + i * 60,
-                    f"{qty} units",
-                ))
+                elements.append(
+                    self.make_arrow(
+                        280,
+                        85 + i * 60,
+                        500,
+                        125 + i * 60,
+                        f"{qty} units",
+                    )
+                )
 
         return await self.create_diagram(f"Supply Chain: {title}", elements)

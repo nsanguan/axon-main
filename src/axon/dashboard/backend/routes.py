@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException
 
 from axon.agents.tools import TOOL_CATALOG
 from axon.connectors.circuit_breaker import DegradationMonitor
+from axon.core.config import settings
 from axon.core.learning import ExperienceLedger, LedgerQuery
 from axon.dashboard.backend.board_repo import BoardRepository
 from axon.dashboard.backend.models import (
@@ -64,9 +65,44 @@ def _get_board() -> BoardRepository:
 
 
 @router.get("/health")
-async def health():
-    """Simple health check endpoint."""
+async def health() -> dict[str, str]:
+    """Liveness check — minimal, always returns 200 if the process is alive."""
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@router.get("/ready")
+async def readiness():
+    """Readiness check — verifies downstream dependencies are available."""
+    from typing import Any
+
+    checks: dict[str, str] = {}
+    healthy = True
+
+    # Check DB connectivity
+    try:
+        board = _get_board()
+        await board.list_hitl_queue()
+        checks["database"] = "ok"
+    except Exception as exc:
+        checks["database"] = f"error: {exc}"
+        healthy = False
+
+    # Check Redis (best-effort)
+    try:
+        from redis.asyncio import Redis as AsyncRedis
+
+        r: AsyncRedis[Any] = AsyncRedis.from_url(
+            settings.redis.url,
+            socket_timeout=3,
+        )
+        _ = await r.ping()
+        await r.close()
+        checks["redis"] = "ok"
+    except Exception as exc:
+        checks["redis"] = f"unavailable: {exc}"
+
+    status_code = 200 if healthy else 503
+    return {"status": "ready" if healthy else "not ready", "checks": checks}, status_code
 
 
 @router.get("/system", response_model=SystemHealth)
@@ -118,7 +154,9 @@ async def update_weights(update: WeightsUpdateRequest):
     with contextlib.suppress(Exception):
         board = _get_board()
         await board.save_weights(_current_weights.model_dump())
-        await board.record_event("weights_updated", actor="api", detail=_current_weights.model_dump())
+        await board.record_event(
+            "weights_updated", actor="api", detail=_current_weights.model_dump()
+        )
     return WeightsResponse(weights=_current_weights)
 
 
@@ -266,7 +304,9 @@ async def approve_or_reject(action: ApprovalAction):
         board = _get_board()
         await board.record_approval(plan_id, action.approved, note)
         event_type = "plan_approved" if action.approved else "plan_rejected"
-        await board.record_event(event_type, actor="planning_manager", plan_id=plan_id, detail={"note": note})
+        await board.record_event(
+            event_type, actor="planning_manager", plan_id=plan_id, detail={"note": note}
+        )
 
     # Tag the experience ledger record (best-effort)
     ledger = _get_ledger()
@@ -292,7 +332,9 @@ async def get_approval_config():
     with contextlib.suppress(Exception):
         db_cfg = await _get_board().get_config() or {}
     return {
-        "max_rounds_before_deadlock": db_cfg.get("max_negotiation_rounds", _negotiation_config.max_rounds),
+        "max_rounds_before_deadlock": db_cfg.get(
+            "max_negotiation_rounds", _negotiation_config.max_rounds
+        ),
         "requires_approval_for_deadlock": True,
         "requires_approval_for_high_impact": True,
         "high_impact_threshold": 0.8,

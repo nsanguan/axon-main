@@ -23,8 +23,8 @@ async def main() -> None:
 
     # Lightweight health server using FastAPI
     try:
-        from fastapi import FastAPI
         import uvicorn
+        from fastapi import FastAPI
 
         app = FastAPI(title="Axon Orchestrator")
 
@@ -46,8 +46,8 @@ async def main() -> None:
     except ImportError:
         # Fallback: minimal health server via asyncio
         log_event("warn", "fastapi_not_available", message="Running with minimal health server")
-        from http.server import HTTPServer, BaseHTTPRequestHandler
         import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
 
         class HealthHandler(BaseHTTPRequestHandler):
             def do_GET(self) -> None:

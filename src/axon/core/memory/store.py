@@ -210,9 +210,7 @@ class PostgresStore(BaseStore):
 
     def batch(self, ops: Iterable[_Op]) -> list[_BatchResult]:
         """Synchronous batch — not supported. Use abatch()."""
-        raise RuntimeError(
-            "PostgresStore only supports async operations. Use abatch()."
-        )
+        raise RuntimeError("PostgresStore only supports async operations. Use abatch().")
 
     async def abatch(self, ops: Iterable[_Op]) -> list[_BatchResult]:
         """Execute multiple store operations asynchronously.
@@ -252,9 +250,7 @@ class PostgresStore(BaseStore):
             return None
         return _row_to_item(row)
 
-    async def _handle_put(
-        self, conn: asyncpg.Connection, op: PutOp
-    ) -> None:
+    async def _handle_put(self, conn: asyncpg.Connection, op: PutOp) -> None:
         """Handle a PutOp: upsert an item.
 
         If value is None, delete the item instead.
@@ -273,9 +269,7 @@ class PostgresStore(BaseStore):
                 json.dumps(op.value),
             )
 
-    async def _handle_search(
-        self, conn: asyncpg.Connection, op: SearchOp
-    ) -> list[SearchItem]:
+    async def _handle_search(self, conn: asyncpg.Connection, op: SearchOp) -> list[SearchItem]:
         """Handle a SearchOp: search items by namespace prefix + optional filter."""
         namespace_depth = len(op.namespace_prefix)
 
@@ -304,7 +298,7 @@ class PostgresStore(BaseStore):
 
         prefix = None
         suffix = None
-        for mc in (op.match_conditions or ()):
+        for mc in op.match_conditions or ():
             if mc.match_type == "prefix":
                 prefix = mc.path
             elif mc.match_type == "suffix":

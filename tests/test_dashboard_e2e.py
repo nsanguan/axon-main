@@ -23,9 +23,7 @@ Coverage:
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4
 
@@ -378,8 +376,18 @@ async def test_list_agents(client: AsyncClient) -> None:
 
     # All 10 domain agents should be present
     agent_ids = {a["agent_id"] for a in agents}
-    expected = {"sales", "procurement", "finance", "production", "logistics", "warehouse",
-                "qa", "qc", "maintenance", "pd"}
+    expected = {
+        "sales",
+        "procurement",
+        "finance",
+        "production",
+        "logistics",
+        "warehouse",
+        "qa",
+        "qc",
+        "maintenance",
+        "pd",
+    }
     assert expected.issubset(agent_ids), f"Missing agents: {expected - agent_ids}"
 
     # Each agent should have tools
@@ -448,16 +456,18 @@ async def test_escalation_start_returns_thread_id(client: AsyncClient) -> None:
         "axon.dashboard.backend.escalation_api._get_graph",
     ) as mock_get_graph:
         mock_compiled = MagicMock()
-        mock_compiled.ainvoke = AsyncMock(return_value={
-            "escalation_level": "manager",
-            "severity_score": 0.45,
-            "escalation_steps": [],
-            "approved": False,
-            "hitl_required": False,
-            "negotiation_rounds": [],
-            "final_plan": [],
-            "deadlock": False,
-        })
+        mock_compiled.ainvoke = AsyncMock(
+            return_value={
+                "escalation_level": "manager",
+                "severity_score": 0.45,
+                "escalation_steps": [],
+                "approved": False,
+                "hitl_required": False,
+                "negotiation_rounds": [],
+                "final_plan": [],
+                "deadlock": False,
+            }
+        )
         mock_compiled.astream = AsyncMock(return_value=AsyncMock())
         mock_get_graph.return_value = mock_compiled
 
@@ -513,7 +523,9 @@ async def test_approve_action_invalid_uuid(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_put_weights_no_body(client: AsyncClient) -> None:
     """PUT /api/weights with no body should return 422."""
-    resp = await client.put("/api/weights", content=b"", headers={"Content-Type": "application/json"})
+    resp = await client.put(
+        "/api/weights", content=b"", headers={"Content-Type": "application/json"}
+    )
     assert resp.status_code == 422
 
 

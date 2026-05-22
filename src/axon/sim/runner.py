@@ -20,13 +20,8 @@ Or directly in Python::
 
 from __future__ import annotations
 
-import asyncio
-import glob
-import os
-import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from decimal import Decimal
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -75,6 +70,7 @@ class SimulationResult:
 
 def _parse_period(start_str: str | None, end_str: str | None) -> dict[str, Any]:
     """Parse period start/end strings into ISO datetime dicts."""
+
     def _dt(s: str) -> str:
         # Accept either "YYYY-MM-DD" or full ISO datetime
         if "T" not in s:
@@ -96,7 +92,7 @@ def load_scenario(path: str | Path) -> dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Scenario not found: {path}")
 
-    with open(path, "r") as f:
+    with open(path) as f:
         raw: dict[str, Any] = yaml.safe_load(f)
 
     if not isinstance(raw, dict):
@@ -105,39 +101,43 @@ def load_scenario(path: str | Path) -> dict[str, Any]:
     # Build demands list in domain model format
     demands: list[dict[str, Any]] = []
     for d in raw.get("demands", []):
-        demands.append({
-            "id": str(uuid4()),
-            "item": {
-                "system": "oracle_ebs",
-                "entity_type": "inventory_item",
-                "native_id": d["item_id"],
-                "display_name": d.get("customer"),
-            },
-            "quantity": str(d.get("quantity", 0)),
-            "period": _parse_period(d.get("period_start"), d.get("period_end")),
-            "source": d.get("source", "forecast"),
-            "confidence": float(d.get("confidence", 0.8)),
-            "priority": int(d.get("priority", 50)),
-        })
+        demands.append(
+            {
+                "id": str(uuid4()),
+                "item": {
+                    "system": "oracle_ebs",
+                    "entity_type": "inventory_item",
+                    "native_id": d["item_id"],
+                    "display_name": d.get("customer"),
+                },
+                "quantity": str(d.get("quantity", 0)),
+                "period": _parse_period(d.get("period_start"), d.get("period_end")),
+                "source": d.get("source", "forecast"),
+                "confidence": float(d.get("confidence", 0.8)),
+                "priority": int(d.get("priority", 50)),
+            }
+        )
 
     # Build supplies list in domain model format
     supplies: list[dict[str, Any]] = []
     for s in raw.get("supplies", []):
         available_from = s.get("available_from") or s.get("arrival_date") or "2026-01-01"
         available_to = s.get("available_to") or "2026-12-31"
-        supplies.append({
-            "id": str(uuid4()),
-            "item": {
-                "system": "oracle_ebs",
-                "entity_type": "inventory_item",
-                "native_id": s["item_id"],
-                "display_name": s.get("location") or s.get("supplier"),
-            },
-            "quantity": str(s.get("quantity", 0)),
-            "period": _parse_period(available_from, available_to),
-            "source": s.get("source", "on_hand"),
-            "lead_time_days": int(s.get("lead_time_days", 0)),
-        })
+        supplies.append(
+            {
+                "id": str(uuid4()),
+                "item": {
+                    "system": "oracle_ebs",
+                    "entity_type": "inventory_item",
+                    "native_id": s["item_id"],
+                    "display_name": s.get("location") or s.get("supplier"),
+                },
+                "quantity": str(s.get("quantity", 0)),
+                "period": _parse_period(available_from, available_to),
+                "source": s.get("source", "on_hand"),
+                "lead_time_days": int(s.get("lead_time_days", 0)),
+            }
+        )
 
     weights: dict[str, float] = {
         "cost": float(raw.get("business_weights", {}).get("cost", 0.3)),
@@ -201,9 +201,7 @@ def check_assertions(
     # Deadlock
     if assertions.expected_deadlock is not None:
         if deadlock != assertions.expected_deadlock:
-            failures.append(
-                f"Expected deadlock={assertions.expected_deadlock}, got {deadlock}"
-            )
+            failures.append(f"Expected deadlock={assertions.expected_deadlock}, got {deadlock}")
 
     # HITL
     if assertions.expected_hitl_required is not None:
@@ -308,13 +306,22 @@ class SimulationRunner:
 
         # Build one proposal per agent type using whatever demands/supplies are in the scenario
         agent_ids = [
-            "sales", "procurement", "finance", "production",
-            "logistics", "warehouse", "qa", "qc", "maintenance", "pd",
+            "sales",
+            "procurement",
+            "finance",
+            "production",
+            "logistics",
+            "warehouse",
+            "qa",
+            "qc",
+            "maintenance",
+            "pd",
         ]
 
         def _mock_proposal(agent_id: str) -> dict[str, Any]:
-            from axon.core.schema import AgentProposal, ProposalStatus
             from decimal import Decimal as D
+
+            from axon.core.schema import AgentProposal, ProposalStatus
 
             allocations = []
             for d in demands[:3]:  # allocate up to 3 demands
@@ -325,6 +332,7 @@ class SimulationRunner:
                 if matching_supply is None:
                     continue
                 from axon.core.schema import Allocation, Demand, Supply
+
                 try:
                     alloc = Allocation(
                         demand=Demand.model_validate(d),

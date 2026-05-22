@@ -7,6 +7,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
+
+from axon.core.config import settings
 
 
 @asynccontextmanager
@@ -26,15 +29,18 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.cors_allow_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
+    # Prometheus metrics instrumentation
+    Instrumentator().instrument(app).expose(app)
+
     # Register routers
-    from axon.dashboard.backend.routes import router
     from axon.dashboard.backend.escalation_api import router as escalation_router
+    from axon.dashboard.backend.routes import router
 
     app.include_router(router, prefix="/api")
     app.include_router(escalation_router)

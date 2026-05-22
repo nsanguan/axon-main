@@ -211,12 +211,14 @@ class ConnectorRegistry:
                 if tool_name in existing_names:
                     continue
 
-                new_tools.append({
-                    "name": tool_name,
-                    "description": tool.get("description", ""),
-                    "server": server_name,
-                    "input_schema": tool.get("input_schema", {}),
-                })
+                new_tools.append(
+                    {
+                        "name": tool_name,
+                        "description": tool.get("description", ""),
+                        "server": server_name,
+                        "input_schema": tool.get("input_schema", {}),
+                    }
+                )
 
                 if merge_into_catalog:
                     TOOL_CATALOG.append(

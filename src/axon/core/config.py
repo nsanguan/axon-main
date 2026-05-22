@@ -235,6 +235,7 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: SecretStr = SecretStr("insecure-default-change-in-production")
+    cors_allow_origins: list[str] = ["*"]
 
     # Observability
     logfire_token: str | None = None

@@ -42,9 +42,7 @@ class TestPostgresStoreConstruction:
         This test just verifies the error type.
         """
         with pytest.raises((OSError, ConnectionError)):
-            await PostgresStore.from_conn_string(
-                "postgresql://no-such-host:5432/no_db"
-            )
+            await PostgresStore.from_conn_string("postgresql://no-such-host:5432/no_db")
 
 
 # =============================================================================
@@ -77,11 +75,14 @@ class TestPostgresStoreOperations:
     @pytest.mark.asyncio
     async def test_aput_upsert(self, store, mock_conn):
         """aput stores a value via upsert SQL."""
-        await store._handle_put(mock_conn, MagicMock(
-            namespace=("agent_insights", "sales"),
-            key="bottleneck_note",
-            value={"note": "Line 3 is slow"},
-        ))
+        await store._handle_put(
+            mock_conn,
+            MagicMock(
+                namespace=("agent_insights", "sales"),
+                key="bottleneck_note",
+                value={"note": "Line 3 is slow"},
+            ),
+        )
         mock_conn.execute.assert_called_once()
         sql = mock_conn.execute.call_args[0][0]
         assert "INSERT INTO memory_store" in sql
@@ -90,11 +91,14 @@ class TestPostgresStoreOperations:
     @pytest.mark.asyncio
     async def test_aput_delete(self, store, mock_conn):
         """aput with value=None deletes the item."""
-        await store._handle_put(mock_conn, MagicMock(
-            namespace=("agent_insights", "sales"),
-            key="bottleneck_note",
-            value=None,
-        ))
+        await store._handle_put(
+            mock_conn,
+            MagicMock(
+                namespace=("agent_insights", "sales"),
+                key="bottleneck_note",
+                value=None,
+            ),
+        )
         mock_conn.execute.assert_called_once()
         sql = mock_conn.execute.call_args[0][0]
         assert "DELETE FROM memory_store" in sql
@@ -103,6 +107,7 @@ class TestPostgresStoreOperations:
     async def test_aget_found(self, store, mock_conn):
         """aget returns Item when row exists."""
         from datetime import datetime
+
         mock_conn.fetchrow.return_value = {
             "namespace": ["agent_insights", "sales"],
             "key": "bottleneck_note",
@@ -110,10 +115,13 @@ class TestPostgresStoreOperations:
             "created_at": datetime.now(UTC),
             "updated_at": datetime.now(UTC),
         }
-        result = await store._handle_get(mock_conn, MagicMock(
-            namespace=("agent_insights", "sales"),
-            key="bottleneck_note",
-        ))
+        result = await store._handle_get(
+            mock_conn,
+            MagicMock(
+                namespace=("agent_insights", "sales"),
+                key="bottleneck_note",
+            ),
+        )
         assert result is not None
         assert result.namespace == ("agent_insights", "sales")
         assert result.key == "bottleneck_note"
@@ -123,16 +131,20 @@ class TestPostgresStoreOperations:
     async def test_aget_not_found(self, store, mock_conn):
         """aget returns None when row does not exist."""
         mock_conn.fetchrow.return_value = None
-        result = await store._handle_get(mock_conn, MagicMock(
-            namespace=("test",),
-            key="nonexistent",
-        ))
+        result = await store._handle_get(
+            mock_conn,
+            MagicMock(
+                namespace=("test",),
+                key="nonexistent",
+            ),
+        )
         assert result is None
 
     @pytest.mark.asyncio
     async def test_asearch_with_prefix(self, store, mock_conn):
         """asearch queries by namespace prefix."""
         from datetime import datetime
+
         now = datetime.now(UTC)
         mock_conn.fetch.return_value = [
             {
@@ -143,13 +155,16 @@ class TestPostgresStoreOperations:
                 "updated_at": now,
             },
         ]
-        results = await store._handle_search(mock_conn, MagicMock(
-            namespace_prefix=("agent_insights",),
-            filter=None,
-            limit=10,
-            offset=0,
-            query=None,
-        ))
+        results = await store._handle_search(
+            mock_conn,
+            MagicMock(
+                namespace_prefix=("agent_insights",),
+                filter=None,
+                limit=10,
+                offset=0,
+                query=None,
+            ),
+        )
         assert len(results) == 1
         assert results[0].namespace == ("agent_insights", "sales")
         assert results[0].score == 1.0
@@ -158,6 +173,7 @@ class TestPostgresStoreOperations:
     async def test_asearch_with_filter(self, store, mock_conn):
         """asearch applies JSONB containment filter."""
         from datetime import datetime
+
         now = datetime.now(UTC)
         mock_conn.fetch.return_value = [
             {
@@ -168,13 +184,16 @@ class TestPostgresStoreOperations:
                 "updated_at": now,
             },
         ]
-        results = await store._handle_search(mock_conn, MagicMock(
-            namespace_prefix=("agent_insights",),
-            filter={"severity": "high"},
-            limit=10,
-            offset=0,
-            query=None,
-        ))
+        results = await store._handle_search(
+            mock_conn,
+            MagicMock(
+                namespace_prefix=("agent_insights",),
+                filter={"severity": "high"},
+                limit=10,
+                offset=0,
+                query=None,
+            ),
+        )
         assert len(results) == 1
         assert results[0].key == "bottleneck"
 
@@ -186,12 +205,15 @@ class TestPostgresStoreOperations:
             {"ns": ["agent_insights", "production"]},
             {"ns": ["plan_history"]},
         ]
-        results = await store._handle_list_namespaces(mock_conn, MagicMock(
-            match_conditions=(),
-            max_depth=None,
-            limit=100,
-            offset=0,
-        ))
+        results = await store._handle_list_namespaces(
+            mock_conn,
+            MagicMock(
+                match_conditions=(),
+                max_depth=None,
+                limit=100,
+                offset=0,
+            ),
+        )
         assert len(results) == 3
         assert ("agent_insights", "sales") in results
         assert ("plan_history",) in results
@@ -200,17 +222,19 @@ class TestPostgresStoreOperations:
     async def test_alist_namespaces_with_prefix(self, store, mock_conn):
         """alist_namespaces filters by prefix."""
         from langgraph.store.base import MatchCondition
+
         mock_conn.fetch.return_value = [
             {"ns": ["agent_insights", "sales"]},
         ]
-        results = await store._handle_list_namespaces(mock_conn, MagicMock(
-            match_conditions=(
-                MatchCondition(match_type="prefix", path=("agent_insights",)),
+        results = await store._handle_list_namespaces(
+            mock_conn,
+            MagicMock(
+                match_conditions=(MatchCondition(match_type="prefix", path=("agent_insights",)),),
+                max_depth=None,
+                limit=100,
+                offset=0,
             ),
-            max_depth=None,
-            limit=100,
-            offset=0,
-        ))
+        )
         assert len(results) == 1
         assert results[0] == ("agent_insights", "sales")
 
@@ -349,11 +373,13 @@ class TestMasterGraphMemory:
         graph = MasterGraph()
         graph.compile()
 
-        result = await graph.run({
-            "correlation_id": "test-run-001",
-            "raw_demands": [{"item": "FG-001", "quantity": 100}],
-            "raw_supplies": [{"item": "FG-001", "quantity": 200}],
-        })
+        result = await graph.run(
+            {
+                "correlation_id": "test-run-001",
+                "raw_demands": [{"item": "FG-001", "quantity": 100}],
+                "raw_supplies": [{"item": "FG-001", "quantity": 200}],
+            }
+        )
 
         assert result is not None
         assert result.get("correlation_id") == "test-run-001"
@@ -366,11 +392,13 @@ class TestMasterGraphMemory:
         graph.compile()
 
         # Without a store, past_insights should be empty
-        result = await graph.run({
-            "correlation_id": "test-insights",
-            "raw_demands": [],
-            "raw_supplies": [],
-        })
+        result = await graph.run(
+            {
+                "correlation_id": "test-insights",
+                "raw_demands": [],
+                "raw_supplies": [],
+            }
+        )
 
         assert result.get("past_insights") == []
 

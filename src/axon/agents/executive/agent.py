@@ -37,8 +37,9 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ExecutiveDeps:
     """Injected dependencies for the Executive Agent."""
-    model_name:  str   = "gpt-4o"
-    max_retries: int   = 3
+
+    model_name: str = "gpt-4o"
+    max_retries: int = 3
     temperature: float = 0.1
 
 
@@ -120,10 +121,12 @@ async def assess_crisis(
         deps = ExecutiveDeps()
 
     # Build escalation trail
-    trail = "\n".join(
-        f"  [{s.level}] {s.agent}: {s.summary}"
-        for s in executive_input.escalation_history
-    ) or "  (no prior escalation)"
+    trail = (
+        "\n".join(
+            f"  [{s.level}] {s.agent}: {s.summary}" for s in executive_input.escalation_history
+        )
+        or "  (no prior escalation)"
+    )
 
     # Build context-rich prompt
     context = (

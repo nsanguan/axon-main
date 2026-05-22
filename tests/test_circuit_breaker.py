@@ -15,8 +15,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-import pytest
-
 from axon.connectors.circuit_breaker import (
     BreakerState,
     CircuitBreaker,
@@ -24,14 +22,17 @@ from axon.connectors.circuit_breaker import (
     DegradationMonitor,
 )
 
-
 # =============================================================================
 # Helpers
 # =============================================================================
 
 
-def make_breaker(server: str = "test_server", threshold: int = 3, cooldown: int = 60) -> CircuitBreaker:
-    return CircuitBreaker(server_name=server, failure_threshold=threshold, cooldown_seconds=cooldown)
+def make_breaker(
+    server: str = "test_server", threshold: int = 3, cooldown: int = 60
+) -> CircuitBreaker:
+    return CircuitBreaker(
+        server_name=server, failure_threshold=threshold, cooldown_seconds=cooldown
+    )
 
 
 # =============================================================================

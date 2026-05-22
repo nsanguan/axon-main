@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 from typing import Any
-from uuid import uuid4
 
 import pytest
 from hypothesis import assume, given, settings
@@ -34,12 +33,9 @@ from axon.core.schema import (
 )
 from axon.orchestrator.conflict_resolver import (
     BusinessWeights,
-    ConflictResolver,
-    NegotiationConfig,
     global_utility,
     utility_score,
 )
-
 
 # =============================================================================
 # Strategies
@@ -51,7 +47,9 @@ def entity_ref(draw: Any, system: str = "oracle_ebs") -> EntityRef:
     return EntityRef(
         system=system,
         entity_type=draw(st.sampled_from(["inventory_item", "wip_job", "sales_order"])),
-        native_id=draw(st.text(alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-", min_size=3, max_size=10)),
+        native_id=draw(
+            st.text(alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-", min_size=3, max_size=10)
+        ),
         display_name=None,
     )
 
@@ -59,6 +57,7 @@ def entity_ref(draw: Any, system: str = "oracle_ebs") -> EntityRef:
 @st.composite
 def period_strategy(draw: Any) -> Period:
     from datetime import UTC, datetime, timedelta
+
     base = datetime(2026, 1, 1, tzinfo=UTC)
     start_offset = draw(st.integers(min_value=0, max_value=30))
     length = draw(st.integers(min_value=1, max_value=30))
@@ -255,10 +254,13 @@ def test_valid_weights_pass_validation(weights: BusinessWeights) -> None:
     assert weights.validate(), f"Weights {weights.as_dict()} don't sum to ~1.0"
 
 
-@pytest.mark.parametrize("bad_weights", [
-    {"cost": 0.5, "delivery": 0.5, "quality": 0.5, "sustainability": 0.1, "flexibility": 0.1},
-    {"cost": 0.0, "delivery": 0.0, "quality": 0.0, "sustainability": 0.0, "flexibility": 0.0},
-])
+@pytest.mark.parametrize(
+    "bad_weights",
+    [
+        {"cost": 0.5, "delivery": 0.5, "quality": 0.5, "sustainability": 0.1, "flexibility": 0.1},
+        {"cost": 0.0, "delivery": 0.0, "quality": 0.0, "sustainability": 0.0, "flexibility": 0.0},
+    ],
+)
 def test_invalid_weights_fail_validation(bad_weights: dict[str, float]) -> None:
     w = BusinessWeights(**bad_weights)
     assert not w.validate()

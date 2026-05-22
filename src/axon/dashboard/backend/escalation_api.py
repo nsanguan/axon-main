@@ -122,12 +122,14 @@ async def start_escalation(body: EscalationStartRequest):
         "hitl_required": False,
         "escalation_level": "manager",
         "severity_score": severity,
-        "escalation_steps": [{
-            "level": "worker",
-            "event": body.event_type,
-            "severity": severity,
-            "departments": body.affected_departments,
-        }],
+        "escalation_steps": [
+            {
+                "level": "worker",
+                "event": body.event_type,
+                "severity": severity,
+                "departments": body.affected_departments,
+            }
+        ],
         "executive_assessment": None,
         "experience_record_id": "",
         "traces": [],
@@ -198,8 +200,8 @@ async def stream_escalation(body: EscalationStartRequest):
     thread_id = body.thread_id or str(uuid.uuid4())
 
     async def event_generator():
-        yield f"data: {{\"thread_id\": \"{thread_id}\", \"event\": \"start\"}}\n\n"
-        yield f"data: {{\"thread_id\": \"{thread_id}\", \"event\": \"assessment\"}}\n\n"
+        yield f'data: {{"thread_id": "{thread_id}", "event": "start"}}\n\n'
+        yield f'data: {{"thread_id": "{thread_id}", "event": "assessment"}}\n\n'
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(

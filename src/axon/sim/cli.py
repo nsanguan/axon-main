@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 
-def _print_result(result: "SimulationResult") -> None:  # noqa: F821
+def _print_result(result: SimulationResult) -> None:  # noqa: F821
     ok = "✓" if result.passed else "✗"
     print(f"  {ok} {result.scenario_name} [{result.duration_seconds:.2f}s]")
     for f in result.failures:

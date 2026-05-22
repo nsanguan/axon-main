@@ -10,7 +10,6 @@ from axon.core.escalation import (
 )
 from axon.orchestrator.supervisor import classify_agents_needed, supervisor_dispatch
 
-
 # =============================================================================
 # SeverityScorer Tests
 # =============================================================================
@@ -102,10 +101,12 @@ class TestSupervisor:
         assert "operations" in agents
 
     def test_classify_agents_vip_first(self):
-        agents = classify_agents_needed({
-            "demands": [{"priority": 95}],
-            "supplies": [{"item": "RM-001"}],
-        })
+        agents = classify_agents_needed(
+            {
+                "demands": [{"priority": 95}],
+                "supplies": [{"item": "RM-001"}],
+            }
+        )
         assert agents[0] == "commercial"
 
     def test_supervisor_dispatch_first_round(self):
@@ -139,9 +140,11 @@ class TestEscalationModels:
         assert EventType.PRODUCTION_BROKEN.value == "production_broken"
 
     def test_severity_scorer_custom(self):
-        scorer = SeverityScorer(custom_scoring={
-            "po_delay": {"impact": 10_000, "urgency": 1.0, "customer_risk": 1.0},
-        })
+        scorer = SeverityScorer(
+            custom_scoring={
+                "po_delay": {"impact": 10_000, "urgency": 1.0, "customer_risk": 1.0},
+            }
+        )
         score = scorer.compute(EventType.PO_DELAY, dept_count=1)
         assert score == 10_000
 

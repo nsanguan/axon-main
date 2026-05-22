@@ -133,9 +133,7 @@ class PolicyServerClient(BaseMCPConnector):
                     "process_code": process_code,
                     "title": process_code,
                     "content": (
-                        str(raw)
-                        if not isinstance(raw, dict)
-                        else raw.get("content", str(raw))
+                        str(raw) if not isinstance(raw, dict) else raw.get("content", str(raw))
                     ),
                     "version": "llmwiki",
                 }
@@ -285,14 +283,16 @@ class PolicyServerClient(BaseMCPConnector):
     async def list_tools(self) -> list[dict[str, Any]]:
         """Return the tools exposed by this policy client (for tool registry)."""
         return [
-            {"name": "get_sop",
-             "description": "Retrieve policy from LLMWiki vault"},
-            {"name": "check_compliance",
-             "description": "Verify plan via LLMWiki policy_consultant"},
-            {"name": "get_audit_history",
-             "description": "Query compliance history via ask_policy"},
-            {"name": "get_regulatory_requirements",
-             "description": "Search LLMWiki for regulations"},
+            {"name": "get_sop", "description": "Retrieve policy from LLMWiki vault"},
+            {
+                "name": "check_compliance",
+                "description": "Verify plan via LLMWiki policy_consultant",
+            },
+            {"name": "get_audit_history", "description": "Query compliance history via ask_policy"},
+            {
+                "name": "get_regulatory_requirements",
+                "description": "Search LLMWiki for regulations",
+            },
         ]
 
     # =========================================================================
@@ -342,14 +342,15 @@ class PolicyServerClient(BaseMCPConnector):
             is_compliant = data.get("is_compliant", data.get("compliant", True))
             violations: list[dict[str, Any]] = []
             if not is_compliant:
-                violations.append({
-                    "rule": data.get("reference", "policy_violation"),
-                    "severity": "high",
-                    "detail": str(
-                        data.get("reason",
-                                 data.get("output", "Policy violation detected"))
-                    ),
-                })
+                violations.append(
+                    {
+                        "rule": data.get("reference", "policy_violation"),
+                        "severity": "high",
+                        "detail": str(
+                            data.get("reason", data.get("output", "Policy violation detected"))
+                        ),
+                    }
+                )
             return {
                 "compliant": is_compliant,
                 "violations": violations,
@@ -367,11 +368,13 @@ class PolicyServerClient(BaseMCPConnector):
         if "fail" in text_lower or "violation" in text_lower:
             return {
                 "compliant": False,
-                "violations": [{
-                    "rule": "policy_violation",
-                    "severity": "high",
-                    "detail": text[:500],
-                }],
+                "violations": [
+                    {
+                        "rule": "policy_violation",
+                        "severity": "high",
+                        "detail": text[:500],
+                    }
+                ],
                 "recommendations": [],
             }
 
@@ -385,19 +388,23 @@ class PolicyServerClient(BaseMCPConnector):
         for line in text.split("\n"):
             line = line.strip()
             if line.startswith("- ") or line.startswith("* "):
-                findings.append({
+                findings.append(
+                    {
+                        "date": "2026-05-22",
+                        "finding": line[2:].strip(),
+                        "severity": "info",
+                        "source": "llmwiki/ask_policy",
+                    }
+                )
+        if not findings and text:
+            findings.append(
+                {
                     "date": "2026-05-22",
-                    "finding": line[2:].strip(),
+                    "finding": text[:500],
                     "severity": "info",
                     "source": "llmwiki/ask_policy",
-                })
-        if not findings and text:
-            findings.append({
-                "date": "2026-05-22",
-                "finding": text[:500],
-                "severity": "info",
-                "source": "llmwiki/ask_policy",
-            })
+                }
+            )
         return findings
 
     @staticmethod

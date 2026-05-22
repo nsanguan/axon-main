@@ -30,6 +30,7 @@ from axon.connectors.base import BaseMCPConnector
 
 class EBSDemandConnector(BaseMCPConnector):
     """MCP client for ebs-demand server (port 8102)."""
+
     server_name = "ebs_demand"
 
     async def get_sales_orders(self) -> list[dict[str, Any]]:
@@ -52,6 +53,7 @@ class EBSDemandConnector(BaseMCPConnector):
 
 class EBSSupplyConnector(BaseMCPConnector):
     """MCP client for ebs-supply server (port 8103)."""
+
     server_name = "ebs_supply"
 
     async def get_inventory_levels(
@@ -104,6 +106,7 @@ class EBSSupplyConnector(BaseMCPConnector):
 
 class EBSProductionConnector(BaseMCPConnector):
     """MCP client for ebs-production server (port 8104)."""
+
     server_name = "ebs_production"
 
     async def list_wip_jobs(self) -> list[dict[str, Any]]:
@@ -137,6 +140,7 @@ class EBSProductionConnector(BaseMCPConnector):
 
 class EBSLogisticsConnector(BaseMCPConnector):
     """MCP client for ebs-logistics server (port 8105)."""
+
     server_name = "ebs_logistics"
 
     async def get_shipments(self) -> list[dict[str, Any]]:
@@ -166,6 +170,7 @@ class EBSLogisticsConnector(BaseMCPConnector):
 
 class EBSQualityConnector(BaseMCPConnector):
     """MCP client for ebs-quality server (port 8106)."""
+
     server_name = "ebs_quality"
 
     async def get_inspection_plan(self) -> list[dict[str, Any]]:
@@ -187,6 +192,7 @@ class EBSQualityConnector(BaseMCPConnector):
 
 class EBSAssetConnector(BaseMCPConnector):
     """MCP client for ebs-asset server (port 8107)."""
+
     server_name = "ebs_asset"
 
     async def get_asset_health(self) -> list[dict[str, Any]]:
@@ -212,6 +218,7 @@ class EBSAssetConnector(BaseMCPConnector):
 
 class EBSFinanceConnector(BaseMCPConnector):
     """MCP client for ebs-finance server (port 8108)."""
+
     server_name = "ebs_finance"
 
     async def get_budget(self) -> list[dict[str, Any]]:
@@ -234,6 +241,7 @@ class EBSFinanceConnector(BaseMCPConnector):
 
 class EBSEngineeringConnector(BaseMCPConnector):
     """MCP client for ebs-engineering server (port 8109)."""
+
     server_name = "ebs_engineering"
 
     async def get_engineering_changes(self) -> list[dict[str, Any]]:
@@ -252,6 +260,7 @@ class EBSEngineeringConnector(BaseMCPConnector):
 
 class EBSWarehouseConnector(BaseMCPConnector):
     """MCP client for ebs-warehouse server (port 8111)."""
+
     server_name = "ebs_warehouse"
 
     async def get_warehouse_capacity(self, org_id: int | None = None) -> Any:

@@ -406,9 +406,7 @@ async def seed():
     # Experience records (axon_brain schema, separate step)
     print("  Seeding axon_brain.experience_records...")
     try:
-        await conn.execute(
-            f"SET search_path TO axon_brain;\n\n{EXPERIENCE_RECORDS_SQL}"
-        )
+        await conn.execute(f"SET search_path TO axon_brain;\n\n{EXPERIENCE_RECORDS_SQL}")
     except Exception as exc:
         print(f"    ⚠ experience_records: {exc}")
 
@@ -430,16 +428,13 @@ async def seed():
         )
         for t in tables:
             try:
-                count = await conn.fetchval(
-                    f"SELECT count(*) FROM {schema_name}.{t['table_name']}"
-                )
+                count = await conn.fetchval(f"SELECT count(*) FROM {schema_name}.{t['table_name']}")
                 print(f"  {schema_name}.{t['table_name']}: {count} rows")
             except Exception:
                 pass
 
     await conn.close()
     print("\nSeed complete.")
-
 
 
 if __name__ == "__main__":

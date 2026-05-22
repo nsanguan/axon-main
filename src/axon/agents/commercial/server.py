@@ -51,9 +51,7 @@ async def commercial_reason(
         return {"error": f"Unknown commercial agent: {agent_id}"}
 
     agent = agent_cls(build_connectors())
-    proposal = await agent.propose(
-        {"context": planning_context, "insights": past_insights or []}
-    )
+    proposal = await agent.propose({"context": planning_context, "insights": past_insights or []})
 
     return {
         "agent_id": agent_id,

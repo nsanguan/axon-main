@@ -99,15 +99,17 @@ class BoardRepository:
         """Return the singleton HITL configuration row."""
         pool = await self._get_pool()
         async with pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "SELECT * FROM axon_board.system_config WHERE id = 1"
-            )
+            row = await conn.fetchrow("SELECT * FROM axon_board.system_config WHERE id = 1")
             if row is None:
                 return None
             # Convert asyncpg Record to plain dict (Decimal → float for JSON compat)
             result: dict[str, Any] = {}
             for k, v in dict(row).items():
-                result[k] = float(v) if hasattr(v, "__float__") and not isinstance(v, (int, float, bool)) else v
+                result[k] = (
+                    float(v)
+                    if hasattr(v, "__float__") and not isinstance(v, (int, float, bool))
+                    else v
+                )
             return result
 
     # ------------------------------------------------------------------
@@ -154,9 +156,7 @@ class BoardRepository:
         """Return all pending approvals from the persistent queue."""
         pool = await self._get_pool()
         async with pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT * FROM axon_board.hitl_queue ORDER BY created_at"
-            )
+            rows = await conn.fetch("SELECT * FROM axon_board.hitl_queue ORDER BY created_at")
             return [dict(r) for r in rows]
 
     # ------------------------------------------------------------------

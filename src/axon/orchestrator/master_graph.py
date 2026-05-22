@@ -128,12 +128,14 @@ async def node_retrieve_context(state: PlanningState) -> dict[str, Any]:
             limit=settings.memory.store_search_limit,
         )
         for item in results:
-            insights.append({
-                "namespace": item.namespace,
-                "key": item.key,
-                "value": item.value,
-                "score": item.score,
-            })
+            insights.append(
+                {
+                    "namespace": item.namespace,
+                    "key": item.key,
+                    "value": item.value,
+                    "score": item.score,
+                }
+            )
 
         # Retrieve relevant plan history
         plan_results = await store.asearch(
@@ -141,13 +143,15 @@ async def node_retrieve_context(state: PlanningState) -> dict[str, Any]:
             limit=5,
         )
         for item in plan_results:
-            insights.append({
-                "namespace": item.namespace,
-                "key": item.key,
-                "value": item.value,
-                "score": item.score,
-                "type": "plan_history",
-            })
+            insights.append(
+                {
+                    "namespace": item.namespace,
+                    "key": item.key,
+                    "value": item.value,
+                    "score": item.score,
+                    "type": "plan_history",
+                }
+            )
     except Exception as exc:
         log_event("warn", "retrieve_insights_failed", error=str(exc))
 
@@ -285,47 +289,59 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
                 so, inv, wip = await asyncio.gather(so_task, inv_task, wip_task)
 
                 if so:
-                    raw_demands.append(MCPToolOutput(
-                        server_name="oracle_ebs",
-                        tool_name="get_sales_orders",
-                        raw_payload={"items": so},
-                        correlation_id=_cid(),
-                    ).model_dump())
+                    raw_demands.append(
+                        MCPToolOutput(
+                            server_name="oracle_ebs",
+                            tool_name="get_sales_orders",
+                            raw_payload={"items": so},
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
                 if inv:
-                    raw_supplies.append(MCPToolOutput(
-                        server_name="oracle_ebs",
-                        tool_name="get_inventory_levels",
-                        raw_payload={"items": inv},
-                        correlation_id=_cid(),
-                    ).model_dump())
+                    raw_supplies.append(
+                        MCPToolOutput(
+                            server_name="oracle_ebs",
+                            tool_name="get_inventory_levels",
+                            raw_payload={"items": inv},
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
                 if wip:
-                    raw_supplies.append(MCPToolOutput(
-                        server_name="oracle_ebs",
-                        tool_name="list_wip_jobs",
-                        raw_payload={"items": wip},
-                        correlation_id=_cid(),
-                    ).model_dump())
+                    raw_supplies.append(
+                        MCPToolOutput(
+                            server_name="oracle_ebs",
+                            tool_name="list_wip_jobs",
+                            raw_payload={"items": wip},
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
 
             async with StoreAgent(settings.mcp_agent_store) as store:
                 # Fetch forecast with a broad query (no item filter = all items)
                 forecast = await store._call_tool("get_demand_forecast", {})
                 if forecast:
-                    raw_demands.append(MCPToolOutput(
-                        server_name="oracle_ebs",
-                        tool_name="get_demand_forecast",
-                        raw_payload={"items": forecast} if isinstance(forecast, list) else forecast,
-                        correlation_id=_cid(),
-                    ).model_dump())
+                    raw_demands.append(
+                        MCPToolOutput(
+                            server_name="oracle_ebs",
+                            tool_name="get_demand_forecast",
+                            raw_payload={"items": forecast}
+                            if isinstance(forecast, list)
+                            else forecast,
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
 
             async with BuyerAgent(settings.mcp_agent_buyer) as buyer:
                 pos = await buyer.get_purchase_orders()
                 if pos:
-                    raw_supplies.append(MCPToolOutput(
-                        server_name="oracle_ebs",
-                        tool_name="get_purchase_orders",
-                        raw_payload={"items": pos},
-                        correlation_id=_cid(),
-                    ).model_dump())
+                    raw_supplies.append(
+                        MCPToolOutput(
+                            server_name="oracle_ebs",
+                            tool_name="get_purchase_orders",
+                            raw_payload={"items": pos},
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
 
         except Exception as exc:
             log_event("warn", "fetch_oracle_ebs_failed", error=str(exc))
@@ -337,12 +353,14 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
             async with SAPConnector(settings.mcp_sap) as sap:
                 sap_so = await sap.get_sales_orders()
                 if sap_so:
-                    raw_demands.append(MCPToolOutput(
-                        server_name="sap",
-                        tool_name="get_sales_orders",
-                        raw_payload={"items": sap_so},
-                        correlation_id=_cid(),
-                    ).model_dump())
+                    raw_demands.append(
+                        MCPToolOutput(
+                            server_name="sap",
+                            tool_name="get_sales_orders",
+                            raw_payload={"items": sap_so},
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
         except Exception as exc:
             log_event("warn", "fetch_sap_failed", error=str(exc))
             failed_servers.append("sap")
@@ -354,12 +372,14 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
                 # Broad SOP fetch; process_code="" returns general manufacturing SOPs
                 sop = await rag._call_tool("get_sop", {"process_code": "manufacturing"})
                 if sop:
-                    raw_policies.append(MCPToolOutput(
-                        server_name="llmwiki",
-                        tool_name="get_sop",
-                        raw_payload=sop if isinstance(sop, dict) else {"content": str(sop)},
-                        correlation_id=_cid(),
-                    ).model_dump())
+                    raw_policies.append(
+                        MCPToolOutput(
+                            server_name="llmwiki",
+                            tool_name="get_sop",
+                            raw_payload=sop if isinstance(sop, dict) else {"content": str(sop)},
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
         except Exception as exc:
             log_event("warn", "fetch_rag_failed", error=str(exc))
             failed_servers.append("llmwiki")
@@ -370,9 +390,12 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
     raw_policies = raw_policies or state.get("raw_policies", [])
 
     degradation = (
-        "CRITICAL" if len(failed_servers) >= 3
-        else "LIMITED" if len(failed_servers) == 2
-        else "DEGRADED" if failed_servers
+        "CRITICAL"
+        if len(failed_servers) >= 3
+        else "LIMITED"
+        if len(failed_servers) == 2
+        else "DEGRADED"
+        if failed_servers
         else "FULL"
     )
 
@@ -629,10 +652,13 @@ async def node_negotiate(state: PlanningState) -> dict[str, Any]:
     )
     resolver = ConflictResolver(config)
 
-    final_round = await resolver.resolve(typed_proposals, demand_context={
-        "demands": state.get("demands", []),
-        "supplies": state.get("supplies", []),
-    })
+    final_round = await resolver.resolve(
+        typed_proposals,
+        demand_context={
+            "demands": state.get("demands", []),
+            "supplies": state.get("supplies", []),
+        },
+    )
 
     # Collect all allocations from the resolved proposals as the final plan
     final_plan: list[dict[str, Any]] = []
@@ -689,8 +715,11 @@ async def node_approve(state: PlanningState) -> dict[str, Any]:
     hitl_required = scorer.needs_hitl(
         severity_score,
         next(
-            (et for et in __import__("axon.core.escalation", fromlist=["EventType"]).EventType
-             if et.value == ("production_broken" if deadlock else "po_delay")),
+            (
+                et
+                for et in __import__("axon.core.escalation", fromlist=["EventType"]).EventType
+                if et.value == ("production_broken" if deadlock else "po_delay")
+            ),
             __import__("axon.core.escalation", fromlist=["EventType"]).EventType.PO_DELAY,
         ),
         priority=max((d.get("priority", 0) for d in demands), default=0),
@@ -700,11 +729,13 @@ async def node_approve(state: PlanningState) -> dict[str, Any]:
 
     if hitl_required:
         # Record escalation step
-        state["escalation_steps"] = state.get("escalation_steps", []) + [{
-            "level": _str_escalation_level(escalation_level),
-            "phase": "approve",
-            "severity_score": severity_score,
-        }]
+        state["escalation_steps"] = state.get("escalation_steps", []) + [
+            {
+                "level": _str_escalation_level(escalation_level),
+                "phase": "approve",
+                "severity_score": severity_score,
+            }
+        ]
         state["severity_score"] = severity_score
         state["escalation_level"] = _str_escalation_level(escalation_level)
 
@@ -835,13 +866,15 @@ async def node_executive(state: PlanningState) -> dict[str, Any]:
 
     state["executive_assessment"] = assessment.model_dump(mode="json")
     state["escalation_level"] = "executive"
-    state.setdefault("escalation_steps", []).append({
-        "level": "executive",
-        "phase": "assessment",
-        "risk": assessment.risk_level,
-        "actions": len(assessment.recommended_actions),
-        "board_escalation": assessment.escalate_to_board,
-    })
+    state.setdefault("escalation_steps", []).append(
+        {
+            "level": "executive",
+            "phase": "assessment",
+            "risk": assessment.risk_level,
+            "actions": len(assessment.recommended_actions),
+            "board_escalation": assessment.escalate_to_board,
+        }
+    )
 
     log_event(
         "info",
@@ -1132,4 +1165,5 @@ class MasterGraph:
         if self._store:
             await self._store.close()
         from axon.orchestrator.logging import close_log_pool
+
         await close_log_pool()

@@ -21,40 +21,44 @@ from axon.core.telemetry import log_event
 
 class EscalationLevel(StrEnum):
     """Four-tier escalation ladder."""
-    WORKER    = "worker"      # Alert detection, initial scoring
-    MANAGER   = "manager"     # Within-department resolution
-    DIRECTOR  = "director"    # Cross-department coordination
-    EXECUTIVE = "executive"   # Strategic HITL decision
+
+    WORKER = "worker"  # Alert detection, initial scoring
+    MANAGER = "manager"  # Within-department resolution
+    DIRECTOR = "director"  # Cross-department coordination
+    EXECUTIVE = "executive"  # Strategic HITL decision
 
 
 class EventType(StrEnum):
     """Supply chain disruption event types."""
-    PO_DELAY           = "po_delay"
-    PRODUCTION_BROKEN  = "production_broken"
-    MACHINE_BROKEN     = "machine_broken"
-    DEMAND_SPIKE       = "demand_spike"
+
+    PO_DELAY = "po_delay"
+    PRODUCTION_BROKEN = "production_broken"
+    MACHINE_BROKEN = "machine_broken"
+    DEMAND_SPIKE = "demand_spike"
     INVENTORY_SHORTAGE = "inventory_shortage"
-    QUALITY_INCIDENT   = "quality_incident"
-    SUPPLIER_CRISIS    = "supplier_crisis"
+    QUALITY_INCIDENT = "quality_incident"
+    SUPPLIER_CRISIS = "supplier_crisis"
     CUSTOMER_COMPLAINT = "customer_complaint"
-    SAFETY_INCIDENT    = "safety_incident"
+    SAFETY_INCIDENT = "safety_incident"
 
 
 class RiskLevel(StrEnum):
     """Risk assessment levels."""
+
     CRITICAL = "critical"
-    HIGH     = "high"
-    MEDIUM   = "medium"
-    LOW      = "low"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
 class ActionType(StrEnum):
     """Executive-level action types."""
-    HALT        = "halt"
-    NOTIFY      = "notify"
-    APPROVE     = "approve"
-    DEFER       = "defer"
-    ESCALATE    = "escalate"
+
+    HALT = "halt"
+    NOTIFY = "notify"
+    APPROVE = "approve"
+    DEFER = "defer"
+    ESCALATE = "escalate"
     INVESTIGATE = "investigate"
 
 
@@ -63,8 +67,8 @@ class ActionType(StrEnum):
 # =============================================================================
 
 # Score thresholds for escalation
-MANAGER_MAX   = 2_000    # ≤ 2K → manager handles within department
-DIRECTOR_MAX  = 10_000   # ≤ 10K → director coordinates cross-department
+MANAGER_MAX = 2_000  # ≤ 2K → manager handles within department
+DIRECTOR_MAX = 10_000  # ≤ 10K → director coordinates cross-department
 # > 10K → executive strategic decision + HITL
 
 # Event types that ALWAYS go to Executive regardless of score
@@ -83,6 +87,7 @@ ALWAYS_EXECUTIVE: set[EventType] = {
 @dataclass
 class StrategicAction:
     """A recommended action at the Executive level."""
+
     action_type: ActionType
     target: str
     description: str
@@ -95,6 +100,7 @@ class StrategicAction:
 @dataclass
 class EscalationStep:
     """Single step in the escalation audit trail."""
+
     level: EscalationLevel
     agent: str
     summary: str
@@ -104,6 +110,7 @@ class EscalationStep:
 @dataclass
 class EscalationState:
     """State accumulated through the escalation ladder."""
+
     event_type: EventType
     raw_detail: str
     severity_score: float = 0.0
@@ -123,15 +130,15 @@ class SeverityScorer:
     """
 
     DEFAULT_SCORING: dict[str, dict[str, float]] = {
-        "po_delay":           {"impact": 80_000, "urgency": 2.5, "customer_risk": 1.2},
-        "production_broken":  {"impact": 500_000, "urgency": 3.0, "customer_risk": 2.0},
-        "machine_broken":     {"impact": 50_000,  "urgency": 1.5, "customer_risk": 1.0},
-        "demand_spike":       {"impact": 200_000, "urgency": 2.0, "customer_risk": 1.5},
+        "po_delay": {"impact": 80_000, "urgency": 2.5, "customer_risk": 1.2},
+        "production_broken": {"impact": 500_000, "urgency": 3.0, "customer_risk": 2.0},
+        "machine_broken": {"impact": 50_000, "urgency": 1.5, "customer_risk": 1.0},
+        "demand_spike": {"impact": 200_000, "urgency": 2.0, "customer_risk": 1.5},
         "inventory_shortage": {"impact": 100_000, "urgency": 2.0, "customer_risk": 1.3},
-        "quality_incident":   {"impact": 150_000, "urgency": 2.5, "customer_risk": 1.8},
-        "supplier_crisis":    {"impact": 300_000, "urgency": 3.0, "customer_risk": 2.0},
-        "customer_complaint": {"impact": 30_000,  "urgency": 1.5, "customer_risk": 1.0},
-        "safety_incident":    {"impact": 1_000_000, "urgency": 4.0, "customer_risk": 3.0},
+        "quality_incident": {"impact": 150_000, "urgency": 2.5, "customer_risk": 1.8},
+        "supplier_crisis": {"impact": 300_000, "urgency": 3.0, "customer_risk": 2.0},
+        "customer_complaint": {"impact": 30_000, "urgency": 1.5, "customer_risk": 1.0},
+        "safety_incident": {"impact": 1_000_000, "urgency": 4.0, "customer_risk": 3.0},
     }
 
     def __init__(self, custom_scoring: dict[str, dict[str, float]] | None = None):
@@ -157,12 +164,16 @@ class SeverityScorer:
         Returns:
             Severity score (positive float).
         """
-        params = self._scoring.get(event_type.value,
-                                    {"impact": 10_000, "urgency": 1.0, "customer_risk": 1.0})
+        params = self._scoring.get(
+            event_type.value, {"impact": 10_000, "urgency": 1.0, "customer_risk": 1.0}
+        )
         impact = override_impact if override_impact is not None else params["impact"]
         urgency = override_urgency if override_urgency is not None else params["urgency"]
-        cust_risk = override_customer_risk if override_customer_risk is not None \
+        cust_risk = (
+            override_customer_risk
+            if override_customer_risk is not None
             else params["customer_risk"]
+        )
 
         score = impact * urgency * dept_count * cust_risk
 
@@ -244,15 +255,12 @@ def compute_severity_from_state(state: dict[str, Any]) -> float:
 
     # Compute factors
     proposals = state.get("agent_proposals", {})
-    agent_ids = {p.get("agent_id", "unknown") for p in proposals.values()
-                 if isinstance(p, dict)}
+    agent_ids = {p.get("agent_id", "unknown") for p in proposals.values() if isinstance(p, dict)}
     dept_count = max(1, len(agent_ids))
     # If there are no real demands, this is a test/empty cycle — score low
     if not demands:
         return 0.0
-    impact = sum(
-        float(d.get("quantity", 0)) * d.get("priority", 50) / 100 for d in demands
-    )
+    impact = sum(float(d.get("quantity", 0)) * d.get("priority", 50) / 100 for d in demands)
 
     scorer = SeverityScorer()
     score = scorer.compute(

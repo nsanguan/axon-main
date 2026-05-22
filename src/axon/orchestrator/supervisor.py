@@ -68,8 +68,10 @@ def classify_agents_needed(state: dict[str, Any]) -> list[str]:
 def supervisor_dispatch(
     state: dict[str, Any],
     round_number: int,
-) -> tuple[Literal["agent_commercial", "agent_operations", "agent_technical",
-                   "response_node", "__end__"], dict[str, Any]]:
+) -> tuple[
+    Literal["agent_commercial", "agent_operations", "agent_technical", "response_node", "__end__"],
+    dict[str, Any],
+]:
     """Supervisor routing logic.
 
     Analyzes current state and decides which agent to call next,
@@ -112,9 +114,8 @@ def supervisor_dispatch(
             return target, {
                 "_supervisor_consulted": consulted + [agent_type],
                 "_supervisor_round": round_number + 1,
-                "_supervisor_history": state.get("_supervisor_history", []) + [
-                    {"round": round_number, "agent": target}
-                ],
+                "_supervisor_history": state.get("_supervisor_history", [])
+                + [{"round": round_number, "agent": target}],
             }
 
     # All needed agents consulted — done

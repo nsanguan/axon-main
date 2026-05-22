@@ -7,10 +7,6 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
-from axon.agents.connector_builder import build_connectors
-from axon.agents.operations import LogisticsAgent, ProductionAgent, WarehouseAgent
-from axon.core.telemetry import log_event
-
 server = FastMCP(
     "axon-agent-operations",
     instructions="Operations agent MCP server: Production, Logistics, Warehouse",

@@ -8,7 +8,7 @@ version = "0.0.2"
 description = "Agentic Supply Chain Planning — Pure MCP Architecture"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [
     {name = "nsanguan"}
 ]
@@ -17,7 +17,6 @@ classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Manufacturing",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 
@@ -40,6 +39,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "tenacity>=9.0.0",
     "pyyaml>=6.0",
+    "prometheus-fastapi-instrumentator>=7.1.0",
 ]
 
 [project.scripts]
@@ -53,22 +53,27 @@ dev = [
     "pytest-timeout>=2.3.0",
     "ruff>=0.6.0",
     "mypy>=1.12.0",
+    "pyright>=1.1.390",
     "pre-commit>=3.8.0",
     "hypothesis>=6.100.0",
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -13,13 +13,13 @@ PostgreSQL, Redis.
 ## Setup commands
 
 ```bash
-# Create virtual environment
-python3 -m venv .venv && source .venv/bin/activate
+# Create virtual environment and install all dependencies
+uv venv --python 3.12 && source .venv/bin/activate
+uv sync --all-extras
 
-# Install in dev mode with all dependencies
-pip install -e ".[dev]"
-# or via requirements files:
-pip install -r requirements.txt -r requirements-dev.txt
+# Add/remove dependencies (keeps uv.lock in sync)
+uv add <package>
+uv remove <package>
 
 # Start infrastructure (Postgres + Redis)
 docker compose -f infra/docker-compose.yml up -d

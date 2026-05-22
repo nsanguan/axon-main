@@ -13,10 +13,11 @@ from axon.core.escalation import ActionType, RiskLevel
 
 class CustomerImpact(BaseModel):
     """Impact on customers from a disruption event."""
-    customer_count_at_risk: int   = Field(..., ge=0)
-    revenue_at_risk_usd:    float = Field(..., ge=0)
-    delivery_delay_days:    int   = Field(..., ge=0)
-    key_accounts_affected:  list[str] = Field(default_factory=list)
+
+    customer_count_at_risk: int = Field(..., ge=0)
+    revenue_at_risk_usd: float = Field(..., ge=0)
+    delivery_delay_days: int = Field(..., ge=0)
+    key_accounts_affected: list[str] = Field(default_factory=list)
 
 
 class StrategicAction(BaseModel):
@@ -25,20 +26,22 @@ class StrategicAction(BaseModel):
     The `reversible` flag is critical — it tells the human approver
     whether the action can be undone.
     """
-    action_type:      ActionType
-    target:           str   = Field(..., description="Target of action (e.g. production_line_A)")
-    description:      str   = Field(..., min_length=10)
-    estimated_impact: str   = Field(..., description="Expected outcome after executing this action")
-    reversible:       bool  = Field(..., description="True = can undo, False = permanent — caution")
-    urgency_hours:    int   = Field(..., ge=0, description="Must execute within N hours")
-    responsible_dept: str   = Field(..., description="Department that must execute")
+
+    action_type: ActionType
+    target: str = Field(..., description="Target of action (e.g. production_line_A)")
+    description: str = Field(..., min_length=10)
+    estimated_impact: str = Field(..., description="Expected outcome after executing this action")
+    reversible: bool = Field(..., description="True = can undo, False = permanent — caution")
+    urgency_hours: int = Field(..., ge=0, description="Must execute within N hours")
+    responsible_dept: str = Field(..., description="Department that must execute")
 
 
 class EscalationStep(BaseModel):
     """Audit trail entry for the escalation history."""
-    level:     str
-    agent:     str
-    summary:   str
+
+    level: str
+    agent: str
+    summary: str
 
 
 class ExecutiveInput(BaseModel):
@@ -47,13 +50,14 @@ class ExecutiveInput(BaseModel):
     Lower levels (Worker/Manager/Director) summarize and escalate
     — the Executive never sees raw data.
     """
-    event_type:           str   = Field(..., description="Type of disruption event")
-    severity_score:       float = Field(..., ge=0, description="Computed by SeverityScorer")
-    director_summary:     str   = Field(..., min_length=20, description="Summary from Director")
+
+    event_type: str = Field(..., description="Type of disruption event")
+    severity_score: float = Field(..., ge=0, description="Computed by SeverityScorer")
+    director_summary: str = Field(..., min_length=20, description="Summary from Director")
     affected_departments: list[str] = Field(..., min_length=1)
     financial_exposure_usd: float = Field(..., ge=0)
-    customer_impact:      CustomerImpact | None = None
-    escalation_history:   list[EscalationStep] = Field(default_factory=list)
+    customer_impact: CustomerImpact | None = None
+    escalation_history: list[EscalationStep] = Field(default_factory=list)
     decision_deadline_utc: str = Field(default="", description="ISO-8601 deadline for decision")
 
     @field_validator("affected_departments")
@@ -70,8 +74,9 @@ class ExecutiveOutput(BaseModel):
     PydanticAI will auto-retry if the LLM returns invalid data.
     `requires_human_approval` is always True at the Executive level.
     """
-    risk_level:  RiskLevel = Field(..., description="Overall risk level")
-    rationale:   str       = Field(..., min_length=50, description="Reasoning behind the decision")
+
+    risk_level: RiskLevel = Field(..., description="Overall risk level")
+    rationale: str = Field(..., min_length=50, description="Reasoning behind the decision")
 
     recommended_actions: list[StrategicAction] = Field(
         ..., min_length=1, description="At least 1 recommended action"
@@ -82,7 +87,7 @@ class ExecutiveOutput(BaseModel):
         description="Executive level always requires human approval",
     )
 
-    notify_external:      bool = Field(..., description="Must notify external stakeholders?")
+    notify_external: bool = Field(..., description="Must notify external stakeholders?")
     external_notify_list: list[str] = Field(
         default_factory=list,
         description="External contacts to notify",
@@ -100,7 +105,8 @@ class ExecutiveOutput(BaseModel):
     )
 
     executive_brief: str = Field(
-        ..., min_length=30,
+        ...,
+        min_length=30,
         description="2-3 sentence summary for human approver",
     )
 
@@ -143,9 +149,10 @@ class IntentClassification(BaseModel):
 
     Classifies incoming requests and routes to the correct workflow.
     """
-    intent_id:   str   = Field(..., description="Unique intent identifier")
-    flow_name:   str   = Field(..., description="Workflow to trigger")
-    confidence:  float = Field(..., ge=0.0, le=1.0)
-    entities:    dict  = Field(default_factory=dict, description="Extracted entities")
-    priority:    str   = Field(default="normal", pattern="^(urgent|normal|low)$")
-    fallback:    bool  = Field(default=False, description="True = unknown intent, use default")
+
+    intent_id: str = Field(..., description="Unique intent identifier")
+    flow_name: str = Field(..., description="Workflow to trigger")
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    entities: dict = Field(default_factory=dict, description="Extracted entities")
+    priority: str = Field(default="normal", pattern="^(urgent|normal|low)$")
+    fallback: bool = Field(default=False, description="True = unknown intent, use default")
