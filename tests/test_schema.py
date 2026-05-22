@@ -333,7 +333,7 @@ class TestConfig:
         assert settings.mcp_agent_store is not None
         assert settings.mcp_sap is not None
         assert settings.mcp_odoo is not None
-        assert settings.mcp_external_rag is not None
+        assert settings.mcp_llmwiki is not None
         assert settings.mcp_postgresql is not None
 
 

@@ -18,5 +18,5 @@ class PDAgent(DomainAgent):
         "Your job is to manage BOM revisions, track engineering change orders (ECOs), "
         "and coordinate new product introduction (NPI) timelines. "
         "When an ECO affects active production, notify Production immediately. "
-        "Ensure all BOM changes follow NPI procedures from mcp-policy-server."
+        "Ensure all BOM changes follow NPI procedures from the LLMWiki knowledge base."
     )

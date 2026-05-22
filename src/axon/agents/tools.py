@@ -23,7 +23,7 @@ class ToolSpec:
 
     name: str
     description: str
-    server: str  # e.g. "oracle_ebs", "sap", "external_rag"
+    server: str  # e.g. "oracle_ebs", "sap", "llmwiki"
     direction: str = "READ"  # READ (query-only) or WRITE (ERP mutation, HITL-gated)
     agent_ids: list[str] = field(default_factory=list)  # which agents can use it
     hitl_condition: str | None = None  # e.g. "amount > $10k", "shift >= 7 days"
@@ -255,28 +255,28 @@ TOOL_CATALOG: list[ToolSpec] = [
     ToolSpec(
         name="get_sop",
         description="Retrieve the relevant Standard Operating Procedure for a process code.",
-        server="external_rag",
+        server="llmwiki",
         direction="READ",
         agent_ids=["qa", "qc", "pd", "maintenance"],
     ),
     ToolSpec(
         name="check_compliance",
         description="Verify a proposed plan or change against regulatory constraints and SOPs.",
-        server="external_rag",
+        server="llmwiki",
         direction="READ",
         agent_ids=["qa", "qc"],
     ),
     ToolSpec(
         name="get_audit_history",
         description="Return recent audit findings relevant to a process or item.",
-        server="external_rag",
+        server="llmwiki",
         direction="READ",
         agent_ids=["qa"],
     ),
     ToolSpec(
         name="get_regulatory_requirements",
         description="Return applicable regulations (FDA, ISO, GMP) for a product category.",
-        server="external_rag",
+        server="llmwiki",
         direction="READ",
         agent_ids=["qa"],
     ),
@@ -305,7 +305,7 @@ TOOL_CATALOG: list[ToolSpec] = [
     ToolSpec(
         name="get_sop",
         description="Retrieve QC procedures and acceptance criteria.",
-        server="external_rag",
+        server="llmwiki",
         direction="READ",
         agent_ids=["qc", "qa", "pd", "maintenance"],
     ),
@@ -342,7 +342,7 @@ TOOL_CATALOG: list[ToolSpec] = [
     ToolSpec(
         name="get_sop",
         description="Retrieve NPI (New Product Introduction) and ECO procedures.",
-        server="external_rag",
+        server="llmwiki",
         direction="READ",
         agent_ids=["pd", "qa", "qc", "maintenance"],
     ),
@@ -371,7 +371,7 @@ TOOL_CATALOG: list[ToolSpec] = [
     ToolSpec(
         name="get_sop",
         description="Retrieve maintenance procedures and safety protocols.",
-        server="external_rag",
+        server="llmwiki",
         direction="READ",
         agent_ids=["maintenance", "qa", "qc", "pd"],
     ),

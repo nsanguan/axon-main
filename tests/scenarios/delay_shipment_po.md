@@ -32,7 +32,7 @@ The **Buyer/Procurement Agent** receives an automated alert and calls the orches
 - Must call `oracle_ebs.get_bom({item_id: "FG-003"})` to confirm dependency
 - Must call `oracle_ebs.list_wip_jobs({item_id: "FG-003"})` to check production impact
 - Must call `mcp_agent_store.get_sales_orders({})` to find at-risk orders
-- Must call `external_rag.get_sop({process_code: "supply_chain.delay_handling"})`
+- Must call `llmwiki.get_sop({process_code: "supply_chain.delay_handling"})`
 - Must calculate: revenue at risk = $250,000 (DataCorp), boards blocked = 500
 
 **Step 3 — SOLUTION GENERATION**

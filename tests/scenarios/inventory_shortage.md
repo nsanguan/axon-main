@@ -37,7 +37,7 @@
 - Call `oracle_ebs.get_bom({item_id: "FG-001"})` — check per-unit RM-001 consumption (0.5 kg/unit)
 - Call `oracle_ebs.list_wip_jobs({item_id: "FG-001"})` — WIP-10234 consuming RM-001
 - Call `mcp_agent_buyer.get_purchase_orders({item_id: "RM-001"})` — check PO status
-- Call `external_rag.get_sop({process_code: "warehouse.material_shortage"})`
+- Call `llmwiki.get_sop({process_code: "warehouse.material_shortage"})`
 - Calculate: 800 kg ÷ 0.5 kg/unit = 1,600 units max. Boeing needs 5,000. Gap = 3,400 units.
 - **Revenue at risk**: 3,400 units × $5.20/unit = $17,680 immediate; Boeing SO at risk = $250K+ if not fulfilled.
 

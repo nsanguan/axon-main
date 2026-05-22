@@ -202,7 +202,7 @@ def test_degradation_full_when_all_closed():
     monitor.breakers = {
         "oracle_ebs": make_breaker("oracle_ebs"),
         "sap": make_breaker("sap"),
-        "external_rag": make_breaker("external_rag"),
+        "llmwiki": make_breaker("llmwiki"),
     }
     monitor.evaluate()
     assert monitor.level == DegradationLevel.FULL
@@ -216,7 +216,7 @@ def test_degradation_degraded_when_one_open():
     monitor.breakers = {
         "oracle_ebs": cb_ebs,
         "sap": make_breaker("sap"),
-        "external_rag": make_breaker("external_rag"),
+        "llmwiki": make_breaker("llmwiki"),
     }
     monitor.evaluate()
     assert monitor.level == DegradationLevel.DEGRADED
@@ -225,13 +225,13 @@ def test_degradation_degraded_when_one_open():
 def test_degradation_limited_when_rag_open():
     """RAG server open → LIMITED (even if ERP servers are healthy)."""
     monitor = DegradationMonitor()
-    cb_rag = make_breaker("external_rag")
+    cb_rag = make_breaker("llmwiki")
     for _ in range(3):
         cb_rag.record_failure()
     monitor.breakers = {
         "oracle_ebs": make_breaker("oracle_ebs"),
         "sap": make_breaker("sap"),
-        "external_rag": cb_rag,
+        "llmwiki": cb_rag,
     }
     monitor.evaluate()
     assert monitor.level == DegradationLevel.LIMITED
@@ -248,7 +248,7 @@ def test_degradation_critical_when_all_erp_open():
     monitor.breakers = {
         "oracle_ebs": cb_ebs,
         "sap": cb_sap,
-        "external_rag": make_breaker("external_rag"),
+        "llmwiki": make_breaker("llmwiki"),
     }
     monitor.evaluate()
     assert monitor.level == DegradationLevel.CRITICAL
@@ -258,7 +258,7 @@ def test_degradation_critical_when_rag_open_plus_others():
     monitor = DegradationMonitor()
     cb_ebs = make_breaker("oracle_ebs")
     cb_sap = make_breaker("sap")
-    cb_rag = make_breaker("external_rag")
+    cb_rag = make_breaker("llmwiki")
     for _ in range(3):
         cb_ebs.record_failure()
         cb_sap.record_failure()
@@ -266,7 +266,7 @@ def test_degradation_critical_when_rag_open_plus_others():
     monitor.breakers = {
         "oracle_ebs": cb_ebs,
         "sap": cb_sap,
-        "external_rag": cb_rag,
+        "llmwiki": cb_rag,
     }
     monitor.evaluate()
     assert monitor.level == DegradationLevel.CRITICAL

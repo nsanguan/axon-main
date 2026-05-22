@@ -501,7 +501,7 @@ class TestToolCatalogCompleteness:
     def test_all_tools_have_server(self):
         """Every tool has a valid server assignment."""
         for tool in TOOL_CATALOG:
-            assert tool.server in ("oracle_ebs", "sap", "odoo", "external_rag")
+            assert tool.server in ("oracle_ebs", "sap", "odoo", "llmwiki", "mcp_agent_store", "mcp_agent_buyer")
 
     def test_all_write_tools_audited(self):
         """All WRITE tools have hitl_condition documentation."""

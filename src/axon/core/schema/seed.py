@@ -144,8 +144,8 @@ INSERT INTO tool_registry (tool_name, server_name, direction, description) VALUE
 ('get_suppliers',             'oracle_ebs', 'READ', 'Return approved suppliers with lead times and pricing'),
 ('get_item_costs',            'oracle_ebs', 'READ', 'Return standard and actual costs for items'),
 ('get_shipments',             'oracle_ebs', 'READ', 'List shipments with origin, destination, ETA'),
-('get_sop',                   'external_rag', 'READ', 'Retrieve Standard Operating Procedure for a process'),
-('check_compliance',          'external_rag', 'READ', 'Verify plan against regulatory and SOP constraints'),
+('get_sop',                   'llmwiki', 'READ', 'Retrieve Standard Operating Procedure for a process'),
+('check_compliance',          'llmwiki', 'READ', 'Verify plan against regulatory and SOP constraints'),
 ('update_work_center_status', 'oracle_ebs', 'WRITE', 'Update work center status')
 ON CONFLICT (tool_name) DO NOTHING;
 

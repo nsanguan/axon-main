@@ -145,7 +145,7 @@ class DegradationMonitor:
     """Monitors all MCP server circuit breakers and computes system-wide level."""
 
     breakers: dict[str, CircuitBreaker] = field(default_factory=dict)
-    rag_server_name: str = "external_rag"
+    rag_server_name: str = "llmwiki"
     level: DegradationLevel = DegradationLevel.FULL
 
     def register(self, server_name: str, breaker: CircuitBreaker) -> None:

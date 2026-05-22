@@ -1,11 +1,11 @@
-"""ContextRetriever — enriches agent reasoning with RAG-sourced policies and SOPs.
+"""ContextRetriever — enriches agent reasoning with LLMWiki-sourced policies and SOPs.
 
 Wraps PolicyServerClient to provide a simple async API for agents:
   - enrich_prompt() — injects relevant SOP text into an agent's prompt
   - check_plan() — validates a proposed plan against all applicable policies
 
 Usage:
-    from axon.connectors.mcp_external_rag.context_retriever import ContextRetriever
+    from axon.connectors.mcp_llmwiki.context_retriever import ContextRetriever
 
     retriever = ContextRetriever(client)
     enriched_context = await retriever.enrich_prompt(
@@ -18,16 +18,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from axon.connectors.mcp_external_rag.client import PolicyServerClient
+from axon.connectors.mcp_llmwiki.client import PolicyServerClient
 from axon.core.telemetry import log_event
 
 
 class ContextRetriever:
-    """High-level API for agents to consume RAG-sourced policies and SOPs.
+    """High-level API for agents to consume LLMWiki-sourced policies and SOPs.
 
     Agents call enrich_prompt() during the REASON phase and check_plan()
     during the APPROVE phase. All calls go through the PolicyServerClient
-    which communicates with mcp-policy-server via MCP.
+    which fetches knowledge from the Axon wiki (LLMWiki backend).
     """
 
     def __init__(self, client: PolicyServerClient):
@@ -68,7 +68,7 @@ class ContextRetriever:
                 log_event(
                     "warn",
                     "sop_retrieval_failed",
-                    server_name="external_rag",
+                    server_name="llmwiki",
                     process_code=code,
                     error=str(exc),
                 )
@@ -86,7 +86,7 @@ class ContextRetriever:
                 log_event(
                     "warn",
                     "regulatory_retrieval_failed",
-                    server_name="external_rag",
+                    server_name="llmwiki",
                     category=product_category,
                     error=str(exc),
                 )
@@ -95,18 +95,18 @@ class ContextRetriever:
             log_event(
                 "info",
                 "no_enrichments",
-                server_name="external_rag",
+                server_name="llmwiki",
                 process_codes=",".join(process_codes),
             )
             return base_prompt
 
-        enriched = f"{base_prompt}\n\n## POLICIES (from mcp-policy-server)\n\n"
+        enriched = f"{base_prompt}\n\n## POLICIES (from axon-wiki / LLMWiki)\n\n"
         enriched += "\n---\n".join(enrichments)
 
         log_event(
             "info",
             "prompt_enriched",
-            server_name="external_rag",
+            server_name="llmwiki",
             sop_count=len(process_codes),
             enrichment_count=len(enrichments),
         )
@@ -131,14 +131,14 @@ class ContextRetriever:
         log_event(
             "info",
             "compliance_check_started",
-            server_name="external_rag",
+            server_name="llmwiki",
         )
         try:
             result = await self._client.check_compliance(plan_data)
             log_event(
                 "info",
                 "compliance_check_complete",
-                server_name="external_rag",
+                server_name="llmwiki",
                 compliant=result.get("compliant", False),
                 violation_count=len(result.get("violations", [])),
             )
@@ -147,15 +147,15 @@ class ContextRetriever:
             log_event(
                 "error",
                 "compliance_check_failed",
-                server_name="external_rag",
+                server_name="llmwiki",
                 error=str(exc),
             )
-            # Fail open: if RAG is down, return compliant with a warning
+            # Fail open: if wiki is unreachable, return compliant with a warning
             return {
                 "compliant": True,
                 "violations": [],
                 "recommendations": [],
-                "_warning": f"Policy check skipped — RAG unavailable: {exc}",
+                "_warning": f"Policy check skipped — LLMWiki unavailable: {exc}",
                 "policy_check": "skipped",
             }
 
@@ -184,7 +184,7 @@ class ContextRetriever:
             log_event(
                 "warn",
                 "audit_retrieval_failed",
-                server_name="external_rag",
+                server_name="llmwiki",
                 process_code=process_code,
                 error=str(exc),
             )

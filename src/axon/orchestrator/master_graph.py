@@ -249,15 +249,16 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
     Gracefully skips unavailable connectors — sets degradation_level when
     any server fails.
     """
+    from axon.connectors.mcp_llmwiki.client import PolicyServerClient
     from axon.connectors.mcp_oracle_ebs import BuyerAgent, OracleEBSConnector, StoreAgent
-    from axon.connectors.mcp_external_rag.client import PolicyServerClient
     from axon.connectors.mcp_sap.connector import SAPConnector
 
     correlation_id: str = state.get("correlation_id", "")
     log_event("info", "phase_fetch", correlation_id=correlation_id)
 
     # MCPToolOutput.correlation_id is UUID; parse it (or generate a new one)
-    from uuid import UUID as _UUID, uuid4 as _uuid4
+    from uuid import UUID as _UUID
+    from uuid import uuid4 as _uuid4
 
     def _cid() -> _UUID:
         try:
@@ -342,22 +343,22 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
             log_event("warn", "fetch_sap_failed", error=str(exc))
             failed_servers.append("sap")
 
-    # ── External RAG — SOP / policy ───────────────────────────────────────
-    if settings.mcp_external_rag.enabled:
+    # ── LLMWiki — SOP / policy ────────────────────────────────────────────
+    if settings.mcp_llmwiki.enabled:
         try:
-            async with PolicyServerClient(settings.mcp_external_rag) as rag:
+            async with PolicyServerClient(settings.mcp_llmwiki) as rag:
                 # Broad SOP fetch; process_code="" returns general manufacturing SOPs
                 sop = await rag._call_tool("get_sop", {"process_code": "manufacturing"})
                 if sop:
                     raw_policies.append(MCPToolOutput(
-                        server_name="external_rag",
+                        server_name="llmwiki",
                         tool_name="get_sop",
                         raw_payload=sop if isinstance(sop, dict) else {"content": str(sop)},
                         correlation_id=_cid(),
                     ).model_dump())
         except Exception as exc:
             log_event("warn", "fetch_rag_failed", error=str(exc))
-            failed_servers.append("external_rag")
+            failed_servers.append("llmwiki")
 
     # Preserve any pre-loaded data passed into the planning request
     raw_demands = raw_demands or state.get("raw_demands", [])
@@ -469,7 +470,7 @@ async def node_reason(state: PlanningState) -> dict[str, Any]:
     from axon.agents.technical.pd import PDAgent
     from axon.agents.technical.qa import QAAgent
     from axon.agents.technical.qc import QCAgent
-    from axon.connectors.mcp_external_rag.client import PolicyServerClient
+    from axon.connectors.mcp_llmwiki.client import PolicyServerClient
     from axon.connectors.mcp_oracle_ebs import BuyerAgent, OracleEBSConnector, StoreAgent
     from axon.connectors.mcp_sap.connector import SAPConnector
 
@@ -486,8 +487,8 @@ async def node_reason(state: PlanningState) -> dict[str, Any]:
         connectors["mcp_agent_buyer"] = BuyerAgent(settings.mcp_agent_buyer)
     if settings.mcp_sap.enabled:
         connectors["sap"] = SAPConnector(settings.mcp_sap)
-    if settings.mcp_external_rag.enabled:
-        connectors["external_rag"] = PolicyServerClient(settings.mcp_external_rag)
+    if settings.mcp_llmwiki.enabled:
+        connectors["llmwiki"] = PolicyServerClient(settings.mcp_llmwiki)
 
     # Planning context available to all agents
     agent_context: dict[str, Any] = {

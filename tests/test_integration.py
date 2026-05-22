@@ -394,7 +394,7 @@ class TestCircuitBreakerIntegration:
         monitor = DegradationMonitor()
         monitor.register("oracle_ebs", CircuitBreaker("oracle_ebs"))
         monitor.register("sap", CircuitBreaker("sap"))
-        monitor.register("external_rag", CircuitBreaker("external_rag"))
+        monitor.register("llmwiki", CircuitBreaker("llmwiki"))
 
         # All healthy
         assert monitor.evaluate() == DegradationLevel.FULL

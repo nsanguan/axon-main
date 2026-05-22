@@ -213,7 +213,7 @@ MOCK_RESPONSES: dict[str, dict[str, Any]] = {
         "quality_score": 0.95,
         "lead_time_variance_days": 2.3,
     },
-    # RAG tools
+    # LLMWiki tools
     "get_sop": {
         "process_code": "manufacturing.bolts",
         "title": "Aerospace Bolt Manufacturing SOP",

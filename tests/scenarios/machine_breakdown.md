@@ -31,7 +31,7 @@
 
 **Step 2 — IMPACT ASSESSMENT**
 - Call `mcp_agent_store.get_sales_orders({})` to identify at-risk customers
-- Call `external_rag.get_sop({process_code: "production.work_center_failure"})`
+- Call `llmwiki.get_sop({process_code: "production.work_center_failure"})`
 - Calculate: throughput loss = 800 boards × $250/board = $200K revenue at risk/week
 
 **Step 3 — SOLUTION GENERATION**

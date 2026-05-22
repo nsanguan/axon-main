@@ -35,7 +35,7 @@ A major customer (MegaCorp) submitted an **unexpected rush order**: 3,000 units 
 - Call `oracle_ebs.list_wip_jobs({item_id: "FG-003"})`
 - Call `oracle_ebs.get_work_center_capacity({work_center: "SMT-Line1"})`
 - Call `mcp_agent_buyer.get_suppliers({item_id: "RM-099"})` for chip availability
-- Call `external_rag.get_sop({process_code: "sales.demand_spike"})`
+- Call `llmwiki.get_sop({process_code: "sales.demand_spike"})`
 - Calculate: capacity gap = 3,000 units × 4 chips = 12,000 additional chips needed
 
 **Step 3 — SOLUTION GENERATION**
