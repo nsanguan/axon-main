@@ -250,7 +250,11 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
     any server fails.
     """
     from axon.connectors.mcp_llmwiki.client import PolicyServerClient
-    from axon.connectors.mcp_oracle_ebs import BuyerAgent, OracleEBSConnector, StoreAgent
+    from axon.connectors.mcp_oracle_ebs import (
+        BuyerAgent,
+        OracleEBSConnector,
+        StoreAgent,
+    )
     from axon.connectors.mcp_sap.connector import SAPConnector
 
     correlation_id: str = state.get("correlation_id", "")
@@ -471,7 +475,20 @@ async def node_reason(state: PlanningState) -> dict[str, Any]:
     from axon.agents.technical.qa import QAAgent
     from axon.agents.technical.qc import QCAgent
     from axon.connectors.mcp_llmwiki.client import PolicyServerClient
-    from axon.connectors.mcp_oracle_ebs import BuyerAgent, OracleEBSConnector, StoreAgent
+    from axon.connectors.mcp_oracle_ebs import (
+        BuyerAgent,
+        EBSAssetConnector,
+        EBSDemandConnector,
+        EBSEngineeringConnector,
+        EBSFinanceConnector,
+        EBSLogisticsConnector,
+        EBSProductionConnector,
+        EBSQualityConnector,
+        EBSSupplyConnector,
+        EBSWarehouseConnector,
+        OracleEBSConnector,
+        StoreAgent,
+    )
     from axon.connectors.mcp_sap.connector import SAPConnector
 
     correlation_id: str = state.get("correlation_id", "")
@@ -489,6 +506,26 @@ async def node_reason(state: PlanningState) -> dict[str, Any]:
         connectors["sap"] = SAPConnector(settings.mcp_sap)
     if settings.mcp_llmwiki.enabled:
         connectors["llmwiki"] = PolicyServerClient(settings.mcp_llmwiki)
+
+    # EBS domain-specific connectors (10-server architecture)
+    if settings.mcp_ebs_demand.enabled:
+        connectors["ebs_demand"] = EBSDemandConnector(settings.mcp_ebs_demand)
+    if settings.mcp_ebs_supply.enabled:
+        connectors["ebs_supply"] = EBSSupplyConnector(settings.mcp_ebs_supply)
+    if settings.mcp_ebs_production.enabled:
+        connectors["ebs_production"] = EBSProductionConnector(settings.mcp_ebs_production)
+    if settings.mcp_ebs_logistics.enabled:
+        connectors["ebs_logistics"] = EBSLogisticsConnector(settings.mcp_ebs_logistics)
+    if settings.mcp_ebs_quality.enabled:
+        connectors["ebs_quality"] = EBSQualityConnector(settings.mcp_ebs_quality)
+    if settings.mcp_ebs_asset.enabled:
+        connectors["ebs_asset"] = EBSAssetConnector(settings.mcp_ebs_asset)
+    if settings.mcp_ebs_finance.enabled:
+        connectors["ebs_finance"] = EBSFinanceConnector(settings.mcp_ebs_finance)
+    if settings.mcp_ebs_engineering.enabled:
+        connectors["ebs_engineering"] = EBSEngineeringConnector(settings.mcp_ebs_engineering)
+    if settings.mcp_ebs_warehouse.enabled:
+        connectors["ebs_warehouse"] = EBSWarehouseConnector(settings.mcp_ebs_warehouse)
 
     # Planning context available to all agents
     agent_context: dict[str, Any] = {
