@@ -4,7 +4,7 @@
 
 Axon is an agentic Supply Chain Planning (ASCP) framework built for the AI era.
 It is 100% MCP-native — no direct database connections. Every ERP (Oracle EBS,
-SAP, Odoo) and knowledge base (RAG) is accessed through MCP servers. The system
+SAP, Odoo) and knowledge base (LLMWiki) is accessed through MCP servers. The system
 orchestrates 10 domain agents that negotiate to produce optimal supply chain plans.
 
 **Tech stack**: Python 3.11+, Pydantic v2, PydanticAI, LangGraph, MCP, Logfire,
@@ -86,7 +86,14 @@ Python package starts at `src/axon/__init__.py`.
 ```
 src/axon/
 ├── core/           # Schema models, config, learning, telemetry
-├── connectors/     # MCP clients (oracle_ebs, sap, odoo, external_rag)
+├── connectors/     # MCP clients — universal BaseMCPConnector + domain connectors
+│   ├── base.py              # BaseMCPConnector (CB, retry, cache, dual transport)
+│   ├── circuit_breaker.py   # Per-server resilience
+│   ├── registry.py          # ConnectorFactory + ConnectorRegistry
+│   ├── mcp_oracle_ebs/      # 9 domain + 3 legacy EBS connectors
+│   ├── mcp_llmwiki/         # EraOwl-LLMWiki Policy Server client
+│   ├── mcp_sap/             # SAP connector
+│   └── mcp_odoo/            # Odoo connector
 ├── agents/         # 10 domain agents (commercial, technical, operations)
 ├── orchestrator/   # LangGraph master graph, conflict resolver, tools
 └── dashboard/      # FastAPI backend, Next.js frontend

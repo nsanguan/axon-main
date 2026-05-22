@@ -6,13 +6,15 @@
 
 In practical terms, Axon is an **agentic supply chain planning nerve system for modern ERPs**: it connects ERP execution, planning logic, and multi-agent reasoning without coupling the core planning engine to any one system of record.
 
+> Version: 0.0.2 | Updated: 2026-05-22
+
 ---
 
 ## 🌟 Key Strategic Features
 
 * **100% MCP-Native Architecture**: No direct DB connections (JDBC/ORDS). All systems—Oracle EBS, SAP, Odoo, and LLMWiki—interface via the **Model Context Protocol**.
 * **Plug-and-Play Connectors**: Swap between different ERP versions or vendors simply by switching the MCP host.
-* **External Knowledge Mesh**: LeveLLMWikies your **External LLMWiki MCP Server** to verify every plan against corporate SOPs and legal constraints.
+* **External Knowledge Mesh**: Leverages the **EraOwl-LLMWiki Company Policy MCP Server** to verify every plan against corporate SOPs and legal constraints.
 * **Universal Semantic Schema**: A unified Pydantic-based data language (`axon.core.schema`) that translates diverse MCP tool outputs into a single planning context.
 * **Autonomous Negotiation**: A LangGraph-powered "Conflict Resolution" engine where 10+ departmental agents negotiate to find the highest utility outcome.
 * **Self-Improving Logic**: An Experience Ledger that records the performance of AI-generated plans to refine future reasoning.
@@ -60,10 +62,22 @@ axon/
 │       │   └── telemetry/         # Logfire / OpenTelemetry
 │       │
 │       ├── connectors/            # Perception Layer (Pure MCP Clients)
-│       │   ├── mcp_oracle_ebs/    # Oracle EBS MCP Client (No JDBC) 🟢
+│       │   ├── base.py            # BaseMCPConnector (circuit breaker, retry, cache, dual transport)
+│       │   ├── circuit_breaker.py # Per-server resilience (CLOSED/OPEN/HALF_OPEN)
+│       │   ├── cache.py           # Redis cache layer (per-tool TTL)
+│       │   ├── registry.py        # ConnectorFactory + ConnectorRegistry
+│       │   ├── discovery.py       # ToolDiscoveryService
+│       │   ├── write_gate.py      # HITL-gating for WRITE tool calls
+│       │   ├── rbac.py            # Role-Based Access Control
+│       │   ├── mcp_oracle_ebs/    # Oracle EBS connectors (9 domain + 3 legacy)
+│       │   │   ├── connector.py           # Legacy OracleEBSConnector (composite)
+│       │   │   ├── domain_connectors.py    # 9 domain-specific connectors (ports 8102-8111)
+│       │   │   ├── mcp_agent_buyer.py     # Legacy BuyerAgent (procurement, port 8001)
+│       │   │   ├── mcp_agent_store.py     # Legacy StoreAgent (inventory, port 8002)
+│       │   │   └── transformer.py         # OracleEBSTransformer
 │       │   ├── mcp_sap/           # SAP MCP Client
 │       │   ├── mcp_odoo/          # Odoo MCP Client
-│       │   └── mcp_external_llmwiki/  # Bridge to your External LLMWiki Server
+│       │   └── mcp_llmwiki/       # EraOwl-LLMWiki Policy Server Client
 │       │
 │       ├── agents/                # Cognition Layer (Specialized Agents)
 │       │   ├── base_agent.py      # Parent Agent (MCP Tool-calling capable)
@@ -197,7 +211,7 @@ In short:
 
 * **LLM Layer**: Model-agnostic via `pydantic-ai` — Claude, GPT, Gemini, or local models via `AXON_LLM__MODEL`
 * **State Machine**: `langgraph` (StateGraph + checkpointing)
-* **Knowledge Base**: External LLMWiki MCP Server (Standalone)
+* **Knowledge Base**: EraOwl-LLMWiki Company Policy MCP Server (port 8000, 24 MCP tools)
 * **Standard Protocol**: Model Context Protocol (MCP) — all ERP and data access
 * **Data Validation**: `pydantic` v2 + `pydantic-settings`
 * **Observability**: `logfire` (OpenTelemetry tracing + structured logging)
@@ -329,6 +343,10 @@ API reference: `http://localhost:8200/docs` (Swagger UI)
 
 ---
 ##  AXON LLMWiki Server
+
+**EraOwl-LLMWiki Company Policy MCP Server** at port 8000.
+Exposes 24 MCP tools for policy retrieval, compliance checking,
+procurement validation, and strategic review.
 
 https://axon-wiki.era-ai-consultant.com/
 

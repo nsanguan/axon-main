@@ -1,6 +1,6 @@
 # Axon — Architecture
 
-> Version: 0.0.2 | Last updated: 2026-05-08
+> Version: 0.0.2 | Last updated: 2026-05-22
 
 ## 1. System Overview
 
@@ -33,26 +33,35 @@
 │       └─────────────┴────────────┴────────────┴────────────────┘           │
 │                                  │                                          │
 │                    All agents call MCP tools through                        │
-│                    a shared tool registry                                   │
+│                    the universal connector registry                         │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    │
-                        MCP Protocol (HTTP/SSE)
+                        MCP Protocol (SSE / Streamable HTTP)
                                    │
 ┌──────────────────────────────────┼──────────────────────────────────────────┐
 │                      PERCEPTION LAYER (MCP Connectors)                      │
 │                                                                            │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────┐ │
-│  │ Oracle EBS    │  │ SAP           │  │ Odoo          │  │ External    │ │
-│  │ Connector     │  │ Connector     │  │ Connector     │  │ RAG Bridge  │ │
-│  │               │  │               │  │               │  │             │ │
-│  │ SemanticTx    │  │ SemanticTx    │  │ SemanticTx    │  │ SemanticTx  │ │
-│  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘  └──────┬──────┘ │
-└──────────┼──────────────────┼──────────────────┼──────────────────┼─────────┘
-           │                  │                  │                  │
-    ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐
-    │ Oracle EBS  │   │ SAP S/4HANA │   │   Odoo      │   │ RAG Server  │
-    │ MCP Server  │   │ MCP Server  │   │ MCP Server  │   │ (Standalone)│
-    └─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘
+│  EBS Domain Connectors (9 servers)        Other ERPs     Knowledge         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐  ┌──────────┐  ┌──────────────┐  │
+│  │ demand   │ │ supply   │ │ productn │  │ SAP      │  │ LLMWiki      │  │
+│  │ :8102    │ │ :8103    │ │ :8104    │  │ Conn     │  │ Policy Svr   │  │
+│  ├──────────┤ ├──────────┤ ├──────────┤  └──────────┘  │ :8000        │  │
+│  │ logistics│ │ quality  │ │ asset    │  ┌──────────┐  └──────────────┘  │
+│  │ :8105    │ │ :8106    │ │ :8107    │  │ Odoo     │                    │
+│  ├──────────┤ ├──────────┤ ├──────────┤  │ Conn     │                    │
+│  │ finance  │ │ engineer │ │ warehouse│  └──────────┘                    │
+│  │ :8108    │ │ :8109    │ │ :8111    │                                   │
+│  └──────────┘ └──────────┘ └──────────┘                                   │
+│                                                                            │
+│  All connectors extend BaseMCPConnector                                    │
+│  (circuit breaker, retry, cache, dual transport)                           │
+└──────────┬──────────────────────────────────────────────────────────────────┘
+           │
+   ┌───────┴────────┐    ┌─────────────────┐    ┌──────────────────┐
+   │ EBS MCP Agent  │    │ SAP / Odoo      │    │ EraOwl-LLMWiki   │
+   │ (10 servers)   │    │ MCP Servers     │    │ Policy Server    │
+   │ Oracle EBS DB  │    │                 │    │ (24 MCP tools)   │
+   └────────────────┘    └─────────────────┘    └──────────────────┘
 ```
 
 ## 2. Data Flow
@@ -67,7 +76,7 @@ Every planning cycle follows this sequence:
                      → core schema types (Demand, Supply, Allocation).
 
 3. REASON        Each domain agent receives its slice of the schema,
-                     enriched with RAG-retrieved policies, and produces
+                     enriched with LLMWiki-sourced policies, and produces
                      an AgentProposal.
 
 4. NEGOTIATE     The Conflict Resolver collects all proposals, computes
@@ -89,6 +98,7 @@ Agent                Connector            MCP Server           Redis
   │──call_tool(tool)────▶│                     │                  │
   │                      │──check cache────────│─────────────────▶│
   │                      │◀─────miss───────────│──────────────────│
+  │                      │──circuit breaker────│                  │
   │                      │──POST /mcp/call────▶│                  │
   │                      │                     │──execute tool────│
   │                      │◀──MCPToolOutput─────│                  │
@@ -111,7 +121,7 @@ The error model defines how each layer degrades gracefully.
 | `TRANSFORM_FAILED` | MCP output schema changed, transformer can't parse | Logged at ERROR, raw MCPToolOutput preserved in event log. Item skipped with alert. |
 | `AGENT_TIMEOUT` | Agent exceeds `timeout_seconds` | Proposal is submitted with best-effort partial results. Marked `status=incomplete`. |
 | `NEGOTIATION_DEADLOCK` | Agents fail to converge after N rounds | Fallback to weighted-random tiebreaker using business weights. Result flagged for mandatory HITL review. |
-| `RAG_UNAVAILABLE` | External RAG server down | Agents proceed without policy context. All outputs flagged `policy_check=skipped`. |
+| `LLMWIKI_UNAVAILABLE` | LLMWiki Policy Server down | Agents proceed without policy context. All outputs flagged `policy_check=skipped`. |
 
 ### Circuit Breaker (per MCP server)
 
@@ -131,7 +141,7 @@ State: HALF_OPEN ──(1 success)──▶ CLOSED
 |-------|-----------|----------|
 | `FULL` | All MCP servers healthy | Normal operation |
 | `DEGRADED` | 1 MCP server unhealthy | Plan with partial data; affected ERP's entities marked stale |
-| `LIMITED` | 2+ MCP servers or RAG unhealthy | Agents use cached data only; all outputs flagged for HITL |
+| `LIMITED` | 2+ MCP servers or LLMWiki unhealthy | Agents use cached data only; all outputs flagged for HITL |
 | `CRITICAL` | All MCP servers unhealthy | System returns last-known-good plan from the Experience Ledger |
 
 ## 4. Conflict Resolution Algorithm
