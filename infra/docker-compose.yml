@@ -186,7 +186,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.orchestrator
     ports:
-      - "8000:8000"
+      - "8200:8000"
     environment:
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
       - AXON_REDIS__URL=redis://redis:6379/0
@@ -256,7 +256,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.frontend
     ports:
-      - "3000:3000"
+      - "3100:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8020/api
     depends_on:

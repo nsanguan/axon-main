@@ -168,9 +168,9 @@ MCP Servers (data sources)
 │   └── ebs-warehouse (:8111)  → warehouse management
 ├── External RAG MCP   → SOPs, compliance, policies, regulations
 └── Agent MCP Servers  → 3 groups, 10 domain agents
-    ├── agent-commercial (:8101)  → Sales, Procurement, Finance
-    ├── agent-operations (:8102)  → Production, Logistics, Warehouse
-    └── agent-technical (:8103)   → QA, QC, Maintenance, PD
+    ├── agent-commercial (:8201)  → Sales, Procurement, Finance
+    ├── agent-operations (:8202)  → Production, Logistics, Warehouse
+    └── agent-technical (:8203)   → QA, QC, Maintenance, PD
 ```
 
 ### Reasoning Steps (Chain of Thought)
@@ -250,7 +250,7 @@ Step 5 — EXECUTION & WRITE-BACK
 
 ### Agent Coordination Rules
 
-1. Call the agent's MCP server (e.g., `agent-commercial:8101`) with the `commercial_reason` tool.
+1. Call the agent's MCP server (e.g., `agent-commercial:8201`) with the `commercial_reason` tool.
 2. Pass the full `planning_context` (demands, supplies, allocations) so the agent has complete information.
 3. Each agent returns a proposal with `utility_score` and `justification`.
 4. If agents disagree (conflict), the Conflict Resolver runs utility-auction rounds (max N rounds, tiebreaker = business weights).

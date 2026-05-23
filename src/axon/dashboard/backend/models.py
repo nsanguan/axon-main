@@ -119,3 +119,35 @@ class SystemHealth(BaseModel):
     unhealthy_servers: list[str]
     total_plans: int
     pending_approvals: int
+
+
+# ---------------------------------------------------------------------------
+# Engine monitoring
+# ---------------------------------------------------------------------------
+
+
+class ThreadInfo(BaseModel):
+    """Status of a single LangGraph orchestration thread."""
+
+    thread_id: str
+    event_type: str
+    status: str  # running | waiting_for_approval | completed | error
+    progress: float = 0.0  # 0.0 – 1.0
+    severity_score: float = 0.0
+    escalation_level: str = "worker"
+    affected_departments: list[str] = Field(default_factory=list)
+    summary: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class EngineSummary(BaseModel):
+    """Aggregate engine monitoring statistics."""
+
+    total_threads: int = 0
+    running: int = 0
+    waiting_for_approval: int = 0
+    completed: int = 0
+    error: int = 0
+    avg_severity: float = 0.0
+    top_escalation_level: str = "none"

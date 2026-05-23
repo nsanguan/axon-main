@@ -26,6 +26,8 @@ export default function RootLayout({
               <NavItem href="/weights" label="Strategic Weights" icon="⚖️" />
               <NavItem href="/plans" label="Plan History" icon="📋" />
               <NavItem href="/approvals" label="Pending Approvals" icon="⏳" />
+              <NavItem href="/escalation" label="Escalation" icon="🔼" />
+              <NavItem href="/engine" label="Engine Monitor" icon="🔧" />
             </nav>
             <div className="p-4 border-t border-axon-700 text-xs text-axon-400">
               Axon v0.0.2 — ASCP

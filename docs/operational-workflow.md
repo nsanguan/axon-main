@@ -61,7 +61,7 @@ Body: {
 → MasterGraph.ainvoke(state) → full planning cycle
 ```
 
-**Port**: 8020 (API server via Docker) or 8000 (orchestrator standalone)
+**Port**: 8020 (API server via Docker) or 8200 (orchestrator standalone)
 
 ### 2.2 CLI Simulation (Development/Testing)
 

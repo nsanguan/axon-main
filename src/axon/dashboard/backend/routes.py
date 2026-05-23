@@ -13,14 +13,17 @@ from axon.connectors.circuit_breaker import DegradationMonitor
 from axon.core.config import settings
 from axon.core.learning import ExperienceLedger, LedgerQuery
 from axon.dashboard.backend.board_repo import BoardRepository
+from axon.dashboard.backend.engine_monitor import get_summary, list_threads
 from axon.dashboard.backend.models import (
     AgentInfo,
     ApprovalAction,
+    EngineSummary,
     PendingApproval,
     PlanDetailResponse,
     PlanListResponse,
     PlanSummary,
     SystemHealth,
+    ThreadInfo,
     WeightsResponse,
     WeightsUpdateRequest,
 )
@@ -399,3 +402,20 @@ async def list_tools():
             }
         )
     return {"tools": tools, "total": len(tools)}
+
+
+# =========================================================================
+# Engine Monitoring
+# =========================================================================
+
+
+@router.get("/engine/summary", response_model=EngineSummary)
+async def engine_summary():
+    """Return aggregate engine monitoring statistics."""
+    return get_summary()
+
+
+@router.get("/engine/threads", response_model=list[ThreadInfo])
+async def engine_threads():
+    """List all tracked LangGraph orchestration threads with status."""
+    return list_threads()

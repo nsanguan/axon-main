@@ -20,7 +20,13 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
-from axon.core.escalation import EventType, SeverityScorer
+from axon.core.escalation import ALWAYS_EXECUTIVE, EventType, SeverityScorer
+from axon.dashboard.backend.engine_monitor import (
+    mark_completed,
+    mark_error,
+    mark_waiting_approval,
+    register_thread,
+)
 from axon.orchestrator.master_graph import MasterGraph
 
 router = APIRouter(prefix="/api/escalation", tags=["escalation"])
@@ -96,6 +102,24 @@ async def start_escalation(body: EscalationStartRequest):
         dept_count=max(1, len(body.affected_departments)),
     )
 
+    escalation_level = "worker"
+    if etype in ALWAYS_EXECUTIVE:
+        escalation_level = "executive"
+    elif severity > 10_000:
+        escalation_level = "executive"
+    elif severity > 2_000:
+        escalation_level = "director"
+    elif severity > 0:
+        escalation_level = "manager"
+
+    register_thread(
+        thread_id=thread_id,
+        event_type=body.event_type,
+        severity_score=severity,
+        escalation_level=escalation_level,
+        affected_departments=body.affected_departments,
+    )
+
     state = {
         "planning_request": {
             "event_type": body.event_type,
@@ -136,12 +160,26 @@ async def start_escalation(body: EscalationStartRequest):
         "_store": None,
     }
 
-    result = await graph.ainvoke(state, config=config)
+    try:
+        result = await graph.ainvoke(state, config=config)
+    except Exception as exc:
+        mark_error(thread_id, summary=f"Graph execution failed: {exc}")
+        return EscalationStartResponse(
+            thread_id=thread_id,
+            status="error",
+            severity_score=severity,
+            summary=f"Execution error: {exc}",
+        )
 
     # Check if interrupted for HITL
     escalation_level = result.get("escalation_level", "manager")
 
     if escalation_level == "executive":
+        mark_waiting_approval(
+            thread_id,
+            escalation_level="executive",
+            summary=result.get("approval_note", "Executive assessment pending human approval"),
+        )
         return EscalationStartResponse(
             thread_id=thread_id,
             status="waiting_for_approval",
@@ -149,6 +187,7 @@ async def start_escalation(body: EscalationStartRequest):
             summary=result.get("approval_note", "Executive assessment pending human approval"),
         )
 
+    mark_completed(thread_id, summary=result.get("approval_note", "Escalation completed"))
     return EscalationStartResponse(
         thread_id=thread_id,
         status="complete",
@@ -170,11 +209,13 @@ async def resume_escalation(thread_id: str, body: EscalationResumeRequest):
             config=config,
         )
     except Exception as exc:
+        mark_error(thread_id, summary=f"Resume failed: {exc}")
         raise HTTPException(
             status_code=404,
             detail=f"Thread '{thread_id}' not found or already completed: {exc}",
         ) from exc
 
+    mark_completed(thread_id, summary=f"Decision: {body.decision}")
     return {
         "thread_id": thread_id,
         "status": "complete",
