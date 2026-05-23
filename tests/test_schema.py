@@ -328,9 +328,7 @@ class TestConfig:
     def test_mcp_servers_exist(self):
         from axon.core.config import settings
 
-        assert settings.mcp_oracle_ebs is not None
-        assert settings.mcp_agent_buyer is not None
-        assert settings.mcp_agent_store is not None
+        assert settings.mcp_ebs_auth is not None
         assert settings.mcp_sap is not None
         assert settings.mcp_odoo is not None
         assert settings.mcp_llmwiki is not None

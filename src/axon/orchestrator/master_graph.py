@@ -255,9 +255,8 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
     """
     from axon.connectors.mcp_llmwiki.client import PolicyServerClient
     from axon.connectors.mcp_oracle_ebs import (
-        BuyerAgent,
-        OracleEBSConnector,
-        StoreAgent,
+        EBSDemandConnector,
+        EBSSupplyConnector,
     )
     from axon.connectors.mcp_sap.connector import SAPConnector
 
@@ -279,73 +278,63 @@ async def node_fetch(state: PlanningState) -> dict[str, Any]:
     raw_policies: list[dict[str, Any]] = []
     failed_servers: list[str] = []
 
-    # ── Oracle EBS — inventory, sales orders, WIP ─────────────────────────
-    if settings.mcp_oracle_ebs.enabled:
+    # ── EBS Supply — inventory, POs ──────────────────────────────────────
+    if settings.mcp_ebs_supply.enabled:
         try:
-            async with OracleEBSConnector(settings.mcp_oracle_ebs) as ebs:
-                so_task = ebs.get_sales_orders()
-                inv_task = ebs.get_inventory_levels()
-                wip_task = ebs.list_wip_jobs()
-                so, inv, wip = await asyncio.gather(so_task, inv_task, wip_task)
-
-                if so:
-                    raw_demands.append(
-                        MCPToolOutput(
-                            server_name="oracle_ebs",
-                            tool_name="get_sales_orders",
-                            raw_payload={"items": so},
-                            correlation_id=_cid(),
-                        ).model_dump()
-                    )
+            async with EBSSupplyConnector(settings.mcp_ebs_supply) as supply:
+                inv = await supply.get_inventory_levels(item_ids=[])
                 if inv:
                     raw_supplies.append(
                         MCPToolOutput(
-                            server_name="oracle_ebs",
+                            server_name="ebs_supply",
                             tool_name="get_inventory_levels",
                             raw_payload={"items": inv},
                             correlation_id=_cid(),
                         ).model_dump()
                     )
-                if wip:
-                    raw_supplies.append(
-                        MCPToolOutput(
-                            server_name="oracle_ebs",
-                            tool_name="list_wip_jobs",
-                            raw_payload={"items": wip},
-                            correlation_id=_cid(),
-                        ).model_dump()
-                    )
 
-            async with StoreAgent(settings.mcp_agent_store) as store:
-                # Fetch forecast with a broad query (no item filter = all items)
-                forecast = await store._call_tool("get_demand_forecast", {})
-                if forecast:
-                    raw_demands.append(
-                        MCPToolOutput(
-                            server_name="oracle_ebs",
-                            tool_name="get_demand_forecast",
-                            raw_payload={"items": forecast}
-                            if isinstance(forecast, list)
-                            else forecast,
-                            correlation_id=_cid(),
-                        ).model_dump()
-                    )
-
-            async with BuyerAgent(settings.mcp_agent_buyer) as buyer:
-                pos = await buyer.get_purchase_orders()
+                pos = await supply.get_purchase_orders()
                 if pos:
                     raw_supplies.append(
                         MCPToolOutput(
-                            server_name="oracle_ebs",
+                            server_name="ebs_supply",
                             tool_name="get_purchase_orders",
                             raw_payload={"items": pos},
                             correlation_id=_cid(),
                         ).model_dump()
                     )
-
         except Exception as exc:
-            log_event("warn", "fetch_oracle_ebs_failed", error=str(exc))
-            failed_servers.append("oracle_ebs")
+            log_event("warn", "fetch_ebs_supply_failed", error=str(exc))
+            failed_servers.append("ebs_supply")
+
+    # ── EBS Demand — sales orders, demand forecasts ──────────────────────
+    if settings.mcp_ebs_demand.enabled:
+        try:
+            async with EBSDemandConnector(settings.mcp_ebs_demand) as demand:
+                so = await demand.get_sales_orders()
+                if so:
+                    raw_demands.append(
+                        MCPToolOutput(
+                            server_name="ebs_demand",
+                            tool_name="get_sales_orders",
+                            raw_payload={"items": so},
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
+
+                forecast = await demand.get_demand_forecast()
+                if forecast:
+                    raw_demands.append(
+                        MCPToolOutput(
+                            server_name="ebs_demand",
+                            tool_name="get_demand_forecast",
+                            raw_payload={"items": forecast},
+                            correlation_id=_cid(),
+                        ).model_dump()
+                    )
+        except Exception as exc:
+            log_event("warn", "fetch_ebs_demand_failed", error=str(exc))
+            failed_servers.append("ebs_demand")
 
     # ── SAP — additional inventory / demand ──────────────────────────────
     if settings.mcp_sap.enabled:
@@ -499,8 +488,8 @@ async def node_reason(state: PlanningState) -> dict[str, Any]:
     from axon.agents.technical.qc import QCAgent
     from axon.connectors.mcp_llmwiki.client import PolicyServerClient
     from axon.connectors.mcp_oracle_ebs import (
-        BuyerAgent,
         EBSAssetConnector,
+        EBSAuthConnector,
         EBSDemandConnector,
         EBSEngineeringConnector,
         EBSFinanceConnector,
@@ -509,8 +498,6 @@ async def node_reason(state: PlanningState) -> dict[str, Any]:
         EBSQualityConnector,
         EBSSupplyConnector,
         EBSWarehouseConnector,
-        OracleEBSConnector,
-        StoreAgent,
     )
     from axon.connectors.mcp_sap.connector import SAPConnector
 
@@ -519,16 +506,12 @@ async def node_reason(state: PlanningState) -> dict[str, Any]:
 
     # Build connector instances (not yet connected — agents connect on tool call)
     connectors: dict[str, Any] = {}
-    if settings.mcp_oracle_ebs.enabled:
-        connectors["oracle_ebs"] = OracleEBSConnector(settings.mcp_oracle_ebs)
-    if settings.mcp_agent_store.enabled:
-        connectors["mcp_agent_store"] = StoreAgent(settings.mcp_agent_store)
-    if settings.mcp_agent_buyer.enabled:
-        connectors["mcp_agent_buyer"] = BuyerAgent(settings.mcp_agent_buyer)
     if settings.mcp_sap.enabled:
         connectors["sap"] = SAPConnector(settings.mcp_sap)
     if settings.mcp_llmwiki.enabled:
         connectors["llmwiki"] = PolicyServerClient(settings.mcp_llmwiki)
+    if settings.mcp_ebs_auth.enabled:
+        connectors["ebs_auth"] = EBSAuthConnector(settings.mcp_ebs_auth)
 
     # EBS domain-specific connectors (10-server architecture)
     if settings.mcp_ebs_demand.enabled:

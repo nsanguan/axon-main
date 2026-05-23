@@ -29,9 +29,9 @@ them to the correct server at call time via `SemanticTransformer.can_handle()`.
 | `ebs_finance` | 8108 | EBS MCP Agent — budget, GL, profitability | `EBSFinanceConnector` |
 | `ebs_engineering` | 8109 | EBS MCP Agent — ECOs, BOM | `EBSEngineeringConnector` |
 | `ebs_warehouse` | 8111 | EBS MCP Agent — full warehouse management (14 tools) | `EBSWarehouseConnector` |
-| `oracle_ebs` | 8003 | EBS MCP Agent — legacy composite server | `OracleEBSConnector` |
-| `mcp_agent_buyer` | 8001 | EBS MCP Agent — legacy procurement server | `BuyerAgent` |
-| `mcp_agent_store` | 8002 | EBS MCP Agent — legacy inventory/warehouse server | `StoreAgent` |
+| `ebs_auth` | 8101 | EBS MCP Agent — auth server | `EBSAuthConnector` |
+| `ebs_demand` | 8102 | EBS MCP Agent — demand server | `EBSDemandConnector` |
+| `ebs_supply` | 8103 | EBS MCP Agent — supply server | `EBSSupplyConnector` |
 | `sap` | — | SAP MCP connector | `SAPConnector` |
 | `odoo` | — | Odoo MCP connector | `OdooConnector` |
 | `llmwiki` | 8000 | EraOwl-LLMWiki Company Policy MCP Server (policies, SOPs, compliance) | `PolicyServerClient` |
@@ -257,8 +257,8 @@ EBS MCP Agent Servers (Oracle EBS database via SQLcl subprocess)
 ```
 
 Axon connects to each server via its corresponding domain connector class.
-Legacy composite servers (`oracle_ebs:8003`, `mcp_agent_buyer:8001`,
-`mcp_agent_store:8002`) are preserved for backward compatibility.
+The domain-specific connectors (`ebs_auth:8101` through `ebs_warehouse:8111`)
+replace the legacy composite connectors.
 
 ---
 

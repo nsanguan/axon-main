@@ -147,18 +147,10 @@ class Settings(BaseSettings):
     )
 
     # MCP Servers — each maps to a physical MCP server process
-    # Oracle EBS domain servers (ports 8001-8004, 8101-8111)
-    mcp_oracle_ebs: MCPServerConfig = MCPServerConfig()
-    mcp_agent_buyer: MCPServerConfig = MCPServerConfig(
-        url=AnyHttpUrl("http://localhost:8001/mcp"),
-    )
-    mcp_agent_store: MCPServerConfig = MCPServerConfig(
-        url=AnyHttpUrl("http://localhost:8002/mcp"),
-    )
+    # Oracle EBS domain servers (ports 8101-8111)
     mcp_ebs_auth: MCPServerConfig = MCPServerConfig(
         url=AnyHttpUrl("http://localhost:8101/mcp"),
         transport="streamable_http",
-        enabled=False,
     )
     mcp_ebs_demand: MCPServerConfig = MCPServerConfig(
         url=AnyHttpUrl("http://localhost:8102/mcp"),

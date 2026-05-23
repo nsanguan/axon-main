@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator
 
-from axon.core.escalation import ActionType, RiskLevel
+from axon.core.escalation import ActionType, EscalationStep, RiskLevel
 
 
 class CustomerImpact(BaseModel):
@@ -34,14 +34,6 @@ class StrategicAction(BaseModel):
     reversible: bool = Field(..., description="True = can undo, False = permanent — caution")
     urgency_hours: int = Field(..., ge=0, description="Must execute within N hours")
     responsible_dept: str = Field(..., description="Department that must execute")
-
-
-class EscalationStep(BaseModel):
-    """Audit trail entry for the escalation history."""
-
-    level: str
-    agent: str
-    summary: str
 
 
 class ExecutiveInput(BaseModel):

@@ -297,9 +297,9 @@ def create_mocked_connector(connector_class, config=None):
     No network connection needed — returns canned data for all tools.
 
     Usage:
-        from axon.connectors.mcp_oracle_ebs.connector import OracleEBSConnector
-        ebs = create_mocked_connector(OracleEBSConnector)
-        inventory = await ebs.get_inventory_levels("FG-001")
+        from axon.connectors.mcp_oracle_ebs.domain_connectors import EBSSupplyConnector
+        supply = create_mocked_connector(EBSSupplyConnector)
+        inventory = await supply.get_inventory_levels(item_ids=["FG-001"])
     """
     from axon.core.config import MCPServerConfig
 

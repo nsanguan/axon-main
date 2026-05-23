@@ -12,14 +12,9 @@ import pytest
 
 from axon.connectors.mcp_odoo.connector import OdooConnector
 from axon.connectors.mcp_odoo.transformer import OdooTransformer
-from axon.connectors.mcp_oracle_ebs.connector import OracleEBSConnector
-from axon.connectors.mcp_oracle_ebs.mcp_agent_buyer import BuyerAgent
-from axon.connectors.mcp_oracle_ebs.mcp_agent_store import StoreAgent
-from axon.connectors.mcp_oracle_ebs.transformer import (
-    BuyerTransformer,
-    OracleEBSTransformer,
-    StoreTransformer,
-)
+from axon.connectors.mcp_oracle_ebs.domain_connectors import EBSSupplyConnector
+from axon.connectors.mcp_oracle_ebs.ebs_auth_connector import EBSAuthConnector
+from axon.connectors.mcp_oracle_ebs.transformer import OracleEBSTransformer
 from axon.connectors.mcp_sap.connector import SAPConnector
 from axon.connectors.mcp_sap.transformer import SAPTransformer
 from axon.core.schema import MCPToolOutput
@@ -30,15 +25,15 @@ from tests.mocks import create_mocked_connector
 # =============================================================================
 
 
-class TestOracleEBSIntegration:
+class TestEBSSupplyIntegration:
     @pytest.mark.asyncio
     async def test_fetch_inventory_and_transform(self):
         """Fetch inventory via mock connector → transform to Supply models."""
-        ebs, mock = create_mocked_connector(OracleEBSConnector)
+        supply, mock = create_mocked_connector(EBSSupplyConnector)
         tx = OracleEBSTransformer()
 
         # FETCH
-        raw = await ebs.get_inventory_levels("FG-001")
+        raw = await supply.get_inventory_levels(item_ids=["FG-001"])
         assert len(raw) == 2
         assert raw[0]["item_id"] == "FG-001"
 
@@ -55,44 +50,13 @@ class TestOracleEBSIntegration:
         assert supplies[0].quantity == Decimal("3000")
 
     @pytest.mark.asyncio
-    async def test_fetch_sales_orders_and_transform(self):
-        """Fetch sales orders → transform to Demand models."""
-        ebs, mock = create_mocked_connector(OracleEBSConnector)
-        tx = OracleEBSTransformer()
+    async def test_fetch_purchase_orders(self):
+        """Fetch POs via EBSSupplyConnector."""
+        supply, mock = create_mocked_connector(EBSSupplyConnector)
 
-        raw = await ebs.get_sales_orders()
-        assert len(raw) == 2
-
-        output = MCPToolOutput(
-            server_name="oracle_ebs",
-            tool_name="get_sales_orders",
-            raw_payload={"items": raw},
-        )
-        demands = tx.to_demand(output)
-        assert len(demands) == 2
-        assert demands[0].item.native_id == "FG-001"
-        assert demands[0].source == "sales_order"
-        assert demands[0].quantity == Decimal("5000")
-        assert demands[0].priority == 90
-
-    @pytest.mark.asyncio
-    async def test_fetch_wip_and_transform(self):
-        """Fetch WIP jobs → transform to Supply models."""
-        ebs, mock = create_mocked_connector(OracleEBSConnector)
-        tx = OracleEBSTransformer()
-
-        raw = await ebs.list_wip_jobs()
+        raw = await supply.get_purchase_orders("open")
         assert len(raw) == 1
-
-        output = MCPToolOutput(
-            server_name="oracle_ebs",
-            tool_name="list_wip_jobs",
-            raw_payload={"items": raw},
-        )
-        supplies = tx.to_supply(output)
-        assert len(supplies) == 1
-        assert supplies[0].source == "wip"
-        assert supplies[0].lead_time_days == 30
+        assert raw[0]["po_number"] == "PO-2026-0891"
 
     @pytest.mark.asyncio
     async def test_transformer_routing_wrong_server_rejected(self):
@@ -109,50 +73,96 @@ class TestOracleEBSIntegration:
     @pytest.mark.asyncio
     async def test_mock_call_history(self):
         """Verify mock records tool calls for audit."""
-        ebs, mock = create_mocked_connector(OracleEBSConnector)
-        await ebs.get_inventory_levels("FG-001")
-        await ebs.get_sales_orders()
-        await ebs.get_suppliers("RM-001")
+        supply, mock = create_mocked_connector(EBSSupplyConnector)
+        await supply.get_inventory_levels(item_ids=["FG-001"])
+        await supply.get_purchase_orders()
 
         assert mock.was_called("get_inventory_levels")
-        assert mock.was_called("get_sales_orders")
-        assert mock.was_called("get_suppliers")
-        assert len(mock.call_history) == 3
+        assert mock.was_called("get_purchase_orders")
+        assert len(mock.call_history) == 2
 
     @pytest.mark.asyncio
-    async def test_fetch_forecast_and_transform(self):
-        """Fetch demand forecast → transform to Demand."""
-        ebs, mock = create_mocked_connector(OracleEBSConnector)
-        tx = OracleEBSTransformer()
-
-        raw = await ebs.get_demand_forecast("RM-001")
-        assert len(raw) == 1
-
-        output = MCPToolOutput(
-            server_name="oracle_ebs",
-            tool_name="get_demand_forecast",
-            raw_payload={"items": raw},
-        )
-        demands = tx.to_demand(output)
-        assert len(demands) == 1
-        assert demands[0].source == "forecast"
-        assert demands[0].confidence == 0.80
-
-    @pytest.mark.asyncio
-    async def test_fetch_suppliers_and_transform(self):
-        """Fetch suppliers — raw data passes through connector."""
-        ebs, mock = create_mocked_connector(OracleEBSConnector)
-        raw = await ebs.get_suppliers("RM-001")
-        assert len(raw) == 2
-        assert raw[0]["supplier_name"] == "TitaniumMet Inc"
-
-    @pytest.mark.asyncio
-    async def test_fetch_costs(self):
+    async def test_fetch_item_costs(self):
         """Fetch item costs."""
-        ebs, mock = create_mocked_connector(OracleEBSConnector)
-        raw = await ebs.get_item_costs("FG-001")
-        assert raw["standard_cost"] == 5.20
-        assert raw["currency"] == "USD"
+        supply, mock = create_mocked_connector(EBSSupplyConnector)
+        mock.responses["get_item_costs"] = {
+            "items": [
+                {"standard_cost": 5.20, "currency": "USD", "item_id": "FG-001"},
+            ],
+        }
+        raw = await supply.get_item_costs(item_ids=["FG-001"])
+        assert len(raw) == 1
+        assert raw[0]["standard_cost"] == 5.20
+        assert raw[0]["currency"] == "USD"
+
+
+# =============================================================================
+# EBSAuthConnector integration
+# =============================================================================
+
+
+class TestEBSAuthIntegration:
+    """Verify EBSAuthConnector (auth server at port 8101)."""
+
+    @pytest.mark.asyncio
+    async def test_authenticate(self):
+        """EBSAuthConnector authenticates and returns a token."""
+        auth, mock = create_mocked_connector(EBSAuthConnector)
+        mock.responses["authenticate"] = {
+            "token": "session-token-123",
+            "user": "admin",
+        }
+
+        result = await auth.authenticate()
+        assert result["token"] == "session-token-123"
+        assert result["user"] == "admin"
+
+    @pytest.mark.asyncio
+    async def test_validate_session(self):
+        """EBSAuthConnector validates a session token."""
+        auth, mock = create_mocked_connector(EBSAuthConnector)
+        mock.responses["validate_session"] = {
+            "valid": True,
+            "user": "admin",
+        }
+
+        result = await auth.validate_session("session-token-123")
+        assert result["valid"] is True
+        assert result["user"] == "admin"
+
+    @pytest.mark.asyncio
+    async def test_refresh_token(self):
+        """EBSAuthConnector refreshes a session token."""
+        auth, mock = create_mocked_connector(EBSAuthConnector)
+        mock.responses["refresh_token"] = {
+            "token": "new-session-token-456",
+        }
+
+        result = await auth.refresh_token("session-token-123")
+        assert result["token"] == "new-session-token-456"
+
+    @pytest.mark.asyncio
+    async def test_get_permissions(self):
+        """EBSAuthConnector fetches RBAC permissions."""
+        auth, mock = create_mocked_connector(EBSAuthConnector)
+        mock.responses["get_permissions"] = {
+            "items": [
+                {"resource": "inventory", "access": "read"},
+                {"resource": "orders", "access": "write"},
+            ],
+        }
+
+        result = await auth.get_permissions()
+        assert len(result) == 2
+        assert result[0]["resource"] == "inventory"
+
+    @pytest.mark.asyncio
+    async def test_mock_call_history(self):
+        """Verify EBSAuthConnector mock records calls."""
+        auth, mock = create_mocked_connector(EBSAuthConnector)
+        await auth.authenticate()
+        assert mock.was_called("authenticate")
+        assert len(mock.call_history) == 1
 
 
 # =============================================================================
@@ -205,165 +215,6 @@ class TestOdooIntegration:
         assert len(supplies) == 2
         assert supplies[0].item.system == "odoo"
         assert supplies[0].source == "on_hand"
-
-
-# =============================================================================
-# BuyerAgent — sub-agent integration
-# =============================================================================
-
-
-class TestBuyerAgentIntegration:
-    """Verify BuyerAgent (procurement sub-agent) fetch + transform pipeline."""
-
-    @pytest.mark.asyncio
-    async def test_fetch_suppliers(self):
-        """BuyerAgent fetches suppliers and transforms correctly."""
-        buyer, mock = create_mocked_connector(BuyerAgent)
-        tx = BuyerTransformer()
-
-        raw = await buyer.get_suppliers("RM-001")
-        assert len(raw) == 2
-        assert raw[0]["supplier_name"] == "TitaniumMet Inc"
-
-        output = MCPToolOutput(
-            server_name="mcp_agent_buyer",
-            tool_name="get_suppliers",
-            raw_payload={"items": raw},
-        )
-        assert tx.can_handle(output)
-
-    @pytest.mark.asyncio
-    async def test_fetch_purchase_orders(self):
-        """BuyerAgent fetches POs."""
-        buyer, mock = create_mocked_connector(BuyerAgent)
-
-        raw = await buyer.get_purchase_orders("open")
-        assert len(raw) == 1
-        assert raw[0]["po_number"] == "PO-2026-0891"
-
-    @pytest.mark.asyncio
-    async def test_fetch_item_costs(self):
-        """BuyerAgent fetches item costs."""
-        buyer, mock = create_mocked_connector(BuyerAgent)
-
-        raw = await buyer.get_item_costs("FG-001")
-        assert raw["standard_cost"] == 5.20
-        assert raw["currency"] == "USD"
-
-    @pytest.mark.asyncio
-    async def test_fetch_supplier_performance(self):
-        """BuyerAgent fetches supplier performance."""
-        buyer, mock = create_mocked_connector(BuyerAgent)
-
-        raw = await buyer.get_supplier_performance("SUP-01")
-        assert raw["on_time_pct"] == 92.5
-        assert raw["quality_score"] == 0.95
-
-    @pytest.mark.asyncio
-    async def test_buyer_transformer_rejects_wrong_server(self):
-        """BuyerTransformer rejects output from wrong server."""
-        tx = BuyerTransformer()
-        output = MCPToolOutput(
-            server_name="oracle_ebs",
-            tool_name="get_suppliers",
-            raw_payload={"items": [{"supplier_id": "X"}]},
-        )
-        assert not tx.can_handle(output)
-
-    @pytest.mark.asyncio
-    async def test_mock_call_history(self):
-        """Verify BuyerAgent mock records calls."""
-        buyer, mock = create_mocked_connector(BuyerAgent)
-        await buyer.get_suppliers("RM-001")
-        await buyer.get_purchase_orders()
-        assert mock.was_called("get_suppliers")
-        assert mock.was_called("get_purchase_orders")
-        assert len(mock.call_history) == 2
-
-
-# =============================================================================
-# StoreAgent — sub-agent integration
-# =============================================================================
-
-
-class TestStoreAgentIntegration:
-    """Verify StoreAgent (inventory/warehouse sub-agent) fetch + transform pipeline."""
-
-    @pytest.mark.asyncio
-    async def test_fetch_inventory_and_transform(self):
-        """StoreAgent fetches inventory → transforms to Supply."""
-        store, mock = create_mocked_connector(StoreAgent)
-        tx = StoreTransformer()
-
-        raw = await store.get_inventory_levels("FG-001")
-        assert len(raw) == 2
-        assert raw[0]["item_id"] == "FG-001"
-
-        output = MCPToolOutput(
-            server_name="mcp_agent_store",
-            tool_name="get_inventory_levels",
-            raw_payload={"items": raw},
-        )
-        supplies = tx.to_supply(output)
-        assert len(supplies) == 2
-        assert supplies[0].item.native_id == "FG-001"
-        assert supplies[0].source == "on_hand"
-        assert supplies[0].quantity == Decimal("3000")
-
-    @pytest.mark.asyncio
-    async def test_fetch_available_to_promise(self):
-        """StoreAgent fetches ATP."""
-        store, mock = create_mocked_connector(StoreAgent)
-        mock.responses["get_available_to_promise"] = {
-            "available": 5000,
-            "earliest_date": "2026-06-15",
-        }
-
-        raw = await store.get_available_to_promise("FG-001", "2026-06-01", "2026-06-30")
-        assert raw["available"] == 5000
-        assert raw["earliest_date"] == "2026-06-15"
-
-    @pytest.mark.asyncio
-    async def test_fetch_safety_stock(self):
-        """StoreAgent fetches safety stock."""
-        store, mock = create_mocked_connector(StoreAgent)
-        mock.responses["get_safety_stock"] = {
-            "items": [{"item_id": "FG-001", "safety_stock": 1000, "location": "WH-01"}]
-        }
-
-        raw = await store.get_safety_stock("FG-001")
-        assert len(raw) == 1
-        assert raw[0]["safety_stock"] == 1000
-
-    @pytest.mark.asyncio
-    async def test_fetch_shipments(self):
-        """StoreAgent fetches shipments."""
-        store, mock = create_mocked_connector(StoreAgent)
-
-        raw = await store.get_shipments()
-        assert len(raw) == 1
-        assert raw[0]["shipment_id"] == "SHIP-001"
-
-    @pytest.mark.asyncio
-    async def test_store_transformer_rejects_wrong_server(self):
-        """StoreTransformer rejects output from wrong server."""
-        tx = StoreTransformer()
-        output = MCPToolOutput(
-            server_name="sap",
-            tool_name="get_inventory_levels",
-            raw_payload={},
-        )
-        assert not tx.can_handle(output)
-
-    @pytest.mark.asyncio
-    async def test_mock_call_history(self):
-        """Verify StoreAgent mock records calls."""
-        store, mock = create_mocked_connector(StoreAgent)
-        await store.get_inventory_levels("FG-001")
-        await store.get_shipments()
-        assert mock.was_called("get_inventory_levels")
-        assert mock.was_called("get_shipments")
-        assert len(mock.call_history) == 2
 
 
 # =============================================================================

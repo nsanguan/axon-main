@@ -82,9 +82,9 @@ class TestPlanTrace:
             trigger_event="test",
             agent_id="test",
         )
-        assert trace.confidence == 0.5
+        assert trace.confidence == 0.0
         assert trace.duration_ms == 0
-        assert trace.logic_version == ""
+        assert trace.logic_version is None
 
 
 class TestExperienceRecord:

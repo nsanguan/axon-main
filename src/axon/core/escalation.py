@@ -11,10 +11,11 @@ Scoring formula:  severity = impact_value × urgency × dept_count × customer_r
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
+
+from pydantic import BaseModel, Field
 
 from axon.core.telemetry import log_event
 
@@ -84,8 +85,7 @@ ALWAYS_EXECUTIVE: set[EventType] = {
 # =============================================================================
 
 
-@dataclass
-class StrategicAction:
+class StrategicAction(BaseModel):
     """A recommended action at the Executive level."""
 
     action_type: ActionType
@@ -97,25 +97,23 @@ class StrategicAction:
     responsible_dept: str = "operations"
 
 
-@dataclass
-class EscalationStep:
+class EscalationStep(BaseModel):
     """Single step in the escalation audit trail."""
 
-    level: EscalationLevel
+    level: str
     agent: str
     summary: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
-@dataclass
-class EscalationState:
+class EscalationState(BaseModel):
     """State accumulated through the escalation ladder."""
 
     event_type: EventType
     raw_detail: str
     severity_score: float = 0.0
-    affected_departments: list[str] = field(default_factory=list)
-    steps: list[EscalationStep] = field(default_factory=list)
+    affected_departments: list[str] = Field(default_factory=list)
+    steps: list[EscalationStep] = Field(default_factory=list)
     human_decision: str = ""
     final_summary: str = ""
 

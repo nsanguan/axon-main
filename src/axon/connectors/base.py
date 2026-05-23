@@ -16,8 +16,8 @@ Key features:
 Usage:
     from axon.connectors.base import BaseMCPConnector
 
-    class OracleEBSConnector(BaseMCPConnector):
-        server_name = "oracle_ebs"
+    class EBSDemandConnector(BaseMCPConnector):
+        server_name = "ebs_demand"
         ...
 """
 

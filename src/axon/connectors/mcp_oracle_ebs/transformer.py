@@ -250,43 +250,4 @@ class OracleEBSTransformer(SemanticTransformer):
         return row.get("source", row.get("source_type", source_map.get(tool_name, "planned")))
 
 
-class BuyerTransformer(OracleEBSTransformer):
-    """Transforms MCP outputs from the BuyerAgent sub-agent.
 
-    Handles procurement tools: suppliers, POs, costs, requisitions.
-    Reuses all transformation logic from OracleEBSTransformer.
-    """
-
-    source_system: ClassVar[str] = "mcp_agent_buyer"
-    supported_tools: ClassVar[list[str]] = [
-        "get_suppliers",
-        "get_item_costs",
-        "get_purchase_orders",
-        "get_supplier_performance",
-        "create_purchase_requisition",
-    ]
-
-
-class StoreTransformer(OracleEBSTransformer):
-    """Transforms MCP outputs from the StoreAgent sub-agent.
-
-    Handles inventory/warehouse tools: stock levels, ATP, orders,
-    forecasts, shipments, warehouse management.
-    Reuses all transformation logic from OracleEBSTransformer.
-    """
-
-    source_system: ClassVar[str] = "mcp_agent_store"
-    supported_tools: ClassVar[list[str]] = [
-        "get_inventory_levels",
-        "get_available_to_promise",
-        "get_sales_orders",
-        "get_demand_forecast",
-        "get_safety_stock",
-        "get_storage_capacity",
-        "get_inventory_aging",
-        "get_shipments",
-        "get_carrier_rates",
-        "get_transit_times",
-        "get_delivery_constraints",
-        "create_shipment",
-    ]

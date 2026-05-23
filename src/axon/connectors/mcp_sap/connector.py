@@ -1,7 +1,7 @@
 """SAP MCP Connector — MCP client and tool wrappers.
 
 Connects to mcp-sap (separate project). Follows the same pattern as
-OracleEBSConnector with SAP-specific tool names and SemanticTransformer.
+EBSSupplyConnector with SAP-specific tool names and SemanticTransformer.
 
 Usage:
     from axon.connectors.mcp_sap.connector import SAPConnector

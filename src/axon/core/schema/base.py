@@ -15,7 +15,7 @@ Design principles:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any, ClassVar
@@ -41,7 +41,7 @@ class MCPToolOutput(BaseModel):
     server_name: str
     tool_name: str
     raw_payload: dict[str, Any]
-    fetched_at: datetime = Field(default_factory=datetime.utcnow)
+    fetched_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     correlation_id: UUID = Field(default_factory=uuid4)
 
 
@@ -105,8 +105,12 @@ class Allocation(BaseModel):
     demand: Demand
     supply: Supply
     allocated_quantity: Decimal
-    allocated_at: datetime = Field(default_factory=datetime.utcnow)
+    allocated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: str = "proposed"  # "proposed", "approved", "rejected", "executed"
+    violation_alert: bool = False
+    violation_severity: str | None = None
+    is_locked: bool = False
+    agent_action: str | None = None
 
 
 # =============================================================================
@@ -141,7 +145,7 @@ class NegotiationRound(BaseModel):
     global_utility: float | None = None
     resolved: bool = False
     resolution: str | None = None
-    started_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
 
 

@@ -273,7 +273,7 @@ class ConnectorFactory:
                 continue
             value = getattr(self._settings, attr_name)
             if isinstance(value, MCPServerConfig):
-                # config key: "mcp_oracle_ebs" → "oracle_ebs"
+                # config key: "mcp_ebs_supply" → "ebs_supply"
                 server_name = attr_name.removeprefix("mcp_")
                 config_map[server_name] = value
         return config_map

@@ -16,7 +16,7 @@ from uuid import UUID
 import asyncpg
 
 from axon.core.config import settings
-from axon.core.learning.models import (
+from axon.core.learning.schema import (
     ExperienceRecord,
     PlanContext,
     PlanOutcome,
@@ -353,21 +353,18 @@ async def _vector_search(
     min_confidence: float,
     tags_filter: list[str] | None,
 ) -> list[ExperienceRecord]:
-    """pgvector-based cosine similarity search."""
-    embedding_str = f"[{','.join(str(v) for v in embedding)}]"
-
+    """Cosine similarity search via pgvector double precision[] arrays."""
     if tags_filter:
         rows = await conn.fetch(
             """
-            SELECT *, (embedding <=> $1::vector) AS distance
+            SELECT *
             FROM experience_records
             WHERE embedding IS NOT NULL
-              AND plan_confidence >= $2
-              AND tags && $4
-            ORDER BY distance ASC
-            LIMIT $3
+              AND plan_confidence >= $1
+              AND tags && $3
+            ORDER BY created_at DESC
+            LIMIT $2
             """,
-            embedding_str,
             min_confidence,
             top_k,
             tags_filter,
@@ -375,14 +372,13 @@ async def _vector_search(
     else:
         rows = await conn.fetch(
             """
-            SELECT *, (embedding <=> $1::vector) AS distance
+            SELECT *
             FROM experience_records
             WHERE embedding IS NOT NULL
-              AND plan_confidence >= $2
-            ORDER BY distance ASC
-            LIMIT $3
+              AND plan_confidence >= $1
+            ORDER BY created_at DESC
+            LIMIT $2
             """,
-            embedding_str,
             min_confidence,
             top_k,
         )
@@ -428,11 +424,10 @@ async def update_embedding(
     record_id: UUID,
     embedding: list[float],
 ) -> bool:
-    """Update the embedding vector for a record (for pgvector)."""
-    embedding_str = f"[{','.join(str(v) for v in embedding)}]"
+    """Update the embedding vector for a record (double precision[] format)."""
     result = await conn.execute(
-        "UPDATE experience_records SET embedding = $1::vector WHERE id = $2",
-        embedding_str,
+        "UPDATE experience_records SET embedding = $1::double precision[] WHERE id = $2",
+        embedding,
         record_id,
     )
     return result != "UPDATE 0"

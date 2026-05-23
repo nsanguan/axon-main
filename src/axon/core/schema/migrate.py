@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS experience_records (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE experience_records ADD COLUMN IF NOT EXISTS correlation_id TEXT DEFAULT '';
+ALTER TABLE experience_records ADD COLUMN IF NOT EXISTS warm_archived BOOLEAN DEFAULT FALSE;
+ALTER TABLE experience_records ADD COLUMN IF NOT EXISTS embedding double precision[];
 
 CREATE TABLE IF NOT EXISTS plan_traces (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -160,6 +162,7 @@ CREATE TABLE IF NOT EXISTS demands (
     period_granularity TEXT DEFAULT 'day', source TEXT NOT NULL,
     confidence FLOAT NOT NULL DEFAULT 1.0 CHECK (confidence >= 0 AND confidence <= 1),
     priority INTEGER DEFAULT 0, customer_id UUID,
+    customer_system TEXT, customer_type TEXT, customer_name TEXT,
     metadata JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -183,7 +186,8 @@ CREATE TABLE IF NOT EXISTS allocations (
     allocated_quantity NUMERIC(18,4) NOT NULL,
     status TEXT DEFAULT 'proposed', violation_alert BOOLEAN DEFAULT FALSE,
     violation_severity TEXT, is_locked BOOLEAN DEFAULT FALSE,
-    agent_action TEXT, created_at TIMESTAMPTZ DEFAULT now()
+    agent_action TEXT, allocated_at TIMESTAMPTZ DEFAULT now(),
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_allocations_demand ON allocations(demand_id);
 CREATE INDEX IF NOT EXISTS idx_allocations_supply ON allocations(supply_id);
