@@ -14,6 +14,7 @@ from axon.core.config import settings
 from axon.core.learning import ExperienceLedger, LedgerQuery
 from axon.dashboard.backend.board_repo import BoardRepository
 from axon.dashboard.backend.engine_monitor import get_summary, list_threads
+from axon.connectors.cache import mcp_cache_health
 from axon.dashboard.backend.models import (
     AgentInfo,
     ApprovalAction,
@@ -419,3 +420,9 @@ async def engine_summary():
 async def engine_threads():
     """List all tracked LangGraph orchestration threads with status."""
     return list_threads()
+
+
+@router.get("/engine/cache-health")
+async def engine_cache_health():
+    """Return Redis cache connectivity and health stats."""
+    return await mcp_cache_health()

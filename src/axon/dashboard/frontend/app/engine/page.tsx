@@ -25,6 +25,32 @@ interface EngineSummary {
   top_escalation_level: string
 }
 
+interface QueueStats {
+  redis: { ok: boolean; keys: number; url: string }
+  queue: {
+    name: string
+    waiting: number
+    active: number
+    completed: number
+    failed: number
+    delayed: number
+  }
+  recent_jobs: Array<{
+    id: string
+    name: string
+    status: string
+    data: { event_type: string; raw_detail: string; affected_departments: string[] }
+    result: { thread_id: string; status: string; severity_score: number } | null
+  }>
+}
+
+interface CacheHealth {
+  redis_available: boolean
+  redis_url: string
+  redis_keys: number
+  fallback_entries: number
+}
+
 const EVENT_LABELS: Record<string, string> = {
   po_delay: 'PO Delay',
   production_broken: 'Production Broken',
@@ -54,6 +80,8 @@ const LEVEL_COLORS: Record<string, string> = {
 export default function EnginePage() {
   const [threads, setThreads] = useState<ThreadInfo[]>([])
   const [summary, setSummary] = useState<EngineSummary | null>(null)
+  const [queueStats, setQueueStats] = useState<QueueStats | null>(null)
+  const [cacheHealth, setCacheHealth] = useState<CacheHealth | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -61,10 +89,14 @@ export default function EnginePage() {
     Promise.all([
       fetch('/api/engine/summary').then(r => r.json()),
       fetch('/api/engine/threads').then(r => r.json()),
+      fetch('/api/queue').then(r => r.json()).catch(() => null),
+      fetch('/api/engine/cache-health').then(r => r.json()).catch(() => null),
     ])
-      .then(([s, t]) => {
+      .then(([s, t, q, c]) => {
         setSummary(s)
         setThreads(t || [])
+        if (q) setQueueStats(q)
+        if (c) setCacheHealth(c)
         setError('')
       })
       .catch(() => setError('Failed to load engine data'))
@@ -121,6 +153,55 @@ export default function EnginePage() {
           />
         </div>
       )}
+
+      {/* BullMQ Queue + Redis Cache */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {queueStats && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-500" />
+              BullMQ Queue — {queueStats.queue.name}
+            </h3>
+            <div className="grid grid-cols-5 gap-2">
+              <QueueStat label="Waiting" value={queueStats.queue.waiting} color="text-slate-600" bg="bg-slate-50" />
+              <QueueStat label="Active" value={queueStats.queue.active} color="text-blue-600" bg="bg-blue-50" />
+              <QueueStat label="Done" value={queueStats.queue.completed} color="text-green-600" bg="bg-green-50" />
+              <QueueStat label="Failed" value={queueStats.queue.failed} color="text-red-600" bg="bg-red-50" />
+              <QueueStat label="Delay" value={queueStats.queue.delayed} color="text-amber-600" bg="bg-amber-50" />
+            </div>
+            {queueStats.recent_jobs.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
+                {queueStats.recent_jobs.slice(0, 5).map(j => (
+                  <div key={j.id} className="flex items-center justify-between text-xs">
+                    <span className="font-mono text-gray-500 truncate max-w-[140px]">{j.id.slice(0, 12)}...</span>
+                    <span className={`px-1.5 py-0.5 rounded font-medium ${
+                      j.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      j.status === 'failed' ? 'bg-red-100 text-red-700' :
+                      j.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>{j.status}</span>
+                    <span className="text-gray-400">{j.data.event_type}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {cacheHealth && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${cacheHealth.redis_available ? 'bg-green-500' : 'bg-red-500'}`} />
+              Redis Cache — {cacheHealth.redis_available ? 'Connected' : 'Fallback'}
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              <CacheStat label="Redis Keys" value={cacheHealth.redis_keys} color="text-purple-600" bg="bg-purple-50" />
+              <CacheStat label="Fallback" value={cacheHealth.fallback_entries} color="text-gray-600" bg="bg-gray-50" />
+              <CacheStat label="Backend" value={cacheHealth.redis_available ? 'Redis' : 'Memory'} color={cacheHealth.redis_available ? 'text-green-600' : 'text-amber-600'} bg={cacheHealth.redis_available ? 'bg-green-50' : 'bg-amber-50'} />
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2 font-mono truncate">{cacheHealth.redis_url}</p>
+          </div>
+        )}
+      </div>
 
       {/* Active threads */}
       <div>
@@ -316,4 +397,22 @@ function getElapsed(iso: string): string {
   } catch {
     return '—'
   }
+}
+
+function QueueStat({ label, value, color, bg }: { label: string; value: number; color: string; bg: string }) {
+  return (
+    <div className={`rounded-lg p-2 text-center ${bg}`}>
+      <p className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className={`text-lg font-bold ${color}`}>{value}</p>
+    </div>
+  )
+}
+
+function CacheStat({ label, value, color, bg }: { label: string; value: string | number; color: string; bg: string }) {
+  return (
+    <div className={`rounded-lg p-2 text-center ${bg}`}>
+      <p className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className={`text-lg font-bold ${color}`}>{value}</p>
+    </div>
+  )
 }

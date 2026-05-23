@@ -13,7 +13,9 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "@tailwindcss/forms": "^0.5.9",
-    "lucide-react": "^0.400.0"
+    "lucide-react": "^0.400.0",
+    "ioredis": "^5.4.0",
+    "bullmq": "^5.34.0"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
