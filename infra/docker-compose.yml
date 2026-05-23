@@ -26,11 +26,16 @@
 #                          │  ports 8001-8111│                      │
 #                          └─────────────────┘                      │
 #                                   │                                │
+#                                   │                                │
 #                          ┌────────▼────────┐            ┌─────────▼────────┐
 #                          │  PostgreSQL     │            │     Redis        │
-#                          │  202.71.1.13    │            │  (container)     │
+#                          │  202.71.1.13    │            │  (physical)      │
 #                          │  (physical)     │            │  :6379           │
 #                          └─────────────────┘            └──────────────────┘
+#                                   │                                │
+#                          ┌────────▼────────┐
+#                          │ axon-global-net │ (external docker network)
+#                          └─────────────────┘
 #
 # Usage:
 #   docker compose -f infra/docker-compose.yml build
@@ -42,26 +47,7 @@ name: axon
 
 services:
   # ==========================================================================
-  # Infrastructure
-  # ==========================================================================
-  redis:
-    container_name: axon-redis
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    networks:
-      - axon-net
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
-
-  # ==========================================================================
-  # Axon Agent Services — each group runs as a FastMCP server
+  # Agent Services — each group runs as a FastMCP server
   # ==========================================================================
   agent-commercial:
     container_name: axon-agent-commercial
@@ -75,7 +61,7 @@ services:
     environment:
       - AXON_AGENT_GROUP=commercial
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
-      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_REDIS__URL=redis://host.docker.internal:6379/0
       - AXON_LOG_LEVEL=INFO
       # EBS MCP Agent servers (external project, running on host or separate containers)
       - AXON_MCP_ORACLE_EBS__URL=${AXON_MCP_ORACLE_EBS__URL:-http://host.docker.internal:8003/mcp}
@@ -92,11 +78,8 @@ services:
       - AXON_MCP_EBS_WAREHOUSE__URL=${AXON_MCP_EBS_WAREHOUSE__URL:-http://host.docker.internal:8111/mcp}
       # LLMWiki Policy Server
       - AXON_MCP_LLMWIKI__URL=${AXON_MCP_LLMWIKI__URL:-http://host.docker.internal:8000/sse}
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
-      - axon-net
+      - axon-global-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -113,7 +96,7 @@ services:
     environment:
       - AXON_AGENT_GROUP=operations
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
-      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_REDIS__URL=redis://host.docker.internal:6379/0
       - AXON_LOG_LEVEL=INFO
       # EBS MCP Agent servers
       - AXON_MCP_ORACLE_EBS__URL=${AXON_MCP_ORACLE_EBS__URL:-http://host.docker.internal:8003/mcp}
@@ -130,11 +113,8 @@ services:
       - AXON_MCP_EBS_WAREHOUSE__URL=${AXON_MCP_EBS_WAREHOUSE__URL:-http://host.docker.internal:8111/mcp}
       # LLMWiki Policy Server
       - AXON_MCP_LLMWIKI__URL=${AXON_MCP_LLMWIKI__URL:-http://host.docker.internal:8000/sse}
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
-      - axon-net
+      - axon-global-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -151,7 +131,7 @@ services:
     environment:
       - AXON_AGENT_GROUP=technical
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
-      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_REDIS__URL=redis://host.docker.internal:6379/0
       - AXON_LOG_LEVEL=INFO
       # EBS MCP Agent servers
       - AXON_MCP_ORACLE_EBS__URL=${AXON_MCP_ORACLE_EBS__URL:-http://host.docker.internal:8003/mcp}
@@ -168,11 +148,8 @@ services:
       - AXON_MCP_EBS_WAREHOUSE__URL=${AXON_MCP_EBS_WAREHOUSE__URL:-http://host.docker.internal:8111/mcp}
       # LLMWiki Policy Server
       - AXON_MCP_LLMWIKI__URL=${AXON_MCP_LLMWIKI__URL:-http://host.docker.internal:8000/sse}
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
-      - axon-net
+      - axon-global-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -189,7 +166,7 @@ services:
       - "8200:8000"
     environment:
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
-      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_REDIS__URL=redis://host.docker.internal:6379/0
       - AXON_AGENT_COMMERCIAL__URL=http://agent-commercial:8101/mcp
       - AXON_AGENT_OPERATIONS__URL=http://agent-operations:8102/mcp
       - AXON_AGENT_TECHNICAL__URL=http://agent-technical:8103/mcp
@@ -210,8 +187,6 @@ services:
       # LLMWiki Policy Server
       - AXON_MCP_LLMWIKI__URL=${AXON_MCP_LLMWIKI__URL:-http://host.docker.internal:8000/sse}
     depends_on:
-      redis:
-        condition: service_healthy
       agent-commercial:
         condition: service_started
       agent-operations:
@@ -219,7 +194,7 @@ services:
       agent-technical:
         condition: service_started
     networks:
-      - axon-net
+      - axon-global-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -236,13 +211,10 @@ services:
       - "8020:8020"
     environment:
       - AXON_DATABASE__URL=${AXON_DATABASE__URL:-postgresql+asyncpg://axon:EraOwl2026@host.docker.internal:5435/axon}
-      - AXON_REDIS__URL=redis://redis:6379/0
+      - AXON_REDIS__URL=redis://host.docker.internal:6379/0
       - AXON_LOG_LEVEL=INFO
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
-      - axon-net
+      - axon-global-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -262,7 +234,7 @@ services:
     depends_on:
       - axon-api
     networks:
-      - axon-net
+      - axon-global-network
     restart: unless-stopped
 
   # ==========================================================================
@@ -277,11 +249,11 @@ services:
     ports:
       - "8089:8089"
     networks:
-      - axon-net
+      - axon-global-network
     profiles:
       - viz
     restart: unless-stopped
 
 networks:
-  axon-net:
-    driver: bridge
+  axon-global-network:
+    external: true

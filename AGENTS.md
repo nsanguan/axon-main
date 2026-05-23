@@ -21,7 +21,7 @@ uv sync --all-extras
 uv add <package>
 uv remove <package>
 
-# Start infrastructure (Postgres + Redis)
+# Start infrastructure (Postgres via Docker, Redis is external/shared)
 docker compose -f infra/docker-compose.yml up -d
 
 # Start MCP server stubs (for integration testing)
