@@ -38,11 +38,14 @@
 #   docker compose -f infra/docker-compose.yml down
 # =============================================================================
 
+name: axon
+
 services:
   # ==========================================================================
   # Infrastructure
   # ==========================================================================
   redis:
+    container_name: axon-redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -61,6 +64,7 @@ services:
   # Axon Agent Services — each group runs as a FastMCP server
   # ==========================================================================
   agent-commercial:
+    container_name: axon-agent-commercial
     build:
       context: ..
       dockerfile: docker/Dockerfile.agent
@@ -98,6 +102,7 @@ services:
     restart: unless-stopped
 
   agent-operations:
+    container_name: axon-agent-operations
     build:
       context: ..
       dockerfile: docker/Dockerfile.agent
@@ -135,6 +140,7 @@ services:
     restart: unless-stopped
 
   agent-technical:
+    container_name: axon-agent-technical
     build:
       context: ..
       dockerfile: docker/Dockerfile.agent
@@ -175,6 +181,7 @@ services:
   # Axon Orchestrator — LangGraph MasterGraph engine
   # ==========================================================================
   axon-orchestrator:
+    container_name: axon-orchestrator
     build:
       context: ..
       dockerfile: docker/Dockerfile.orchestrator
@@ -221,6 +228,7 @@ services:
   # Axon API — FastAPI Control Tower backend
   # ==========================================================================
   axon-api:
+    container_name: axon-api
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
@@ -243,6 +251,7 @@ services:
   # Axon Frontend — Next.js Control Tower dashboard
   # ==========================================================================
   axon-frontend:
+    container_name: axon-frontend
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend
@@ -260,6 +269,7 @@ services:
   # Excalidraw MCP Server — visual diagram generation
   # ==========================================================================
   excalidraw-mcp:
+    container_name: axon-excalidraw-mcp
     build:
       context: ..
       dockerfile: docker/Dockerfile.node
