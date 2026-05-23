@@ -69,11 +69,9 @@ axon/
 │       │   ├── discovery.py       # ToolDiscoveryService
 │       │   ├── write_gate.py      # HITL-gating for WRITE tool calls
 │       │   ├── rbac.py            # Role-Based Access Control
-│       │   ├── mcp_oracle_ebs/    # Oracle EBS connectors (9 domain + 3 legacy)
-│       │   │   ├── connector.py           # Legacy OracleEBSConnector (composite)
+│       │   ├── mcp_oracle_ebs/    # Oracle EBS connectors (10 domain + 1 auth)
 │       │   │   ├── domain_connectors.py    # 9 domain-specific connectors (ports 8102-8111)
-│       │   │   ├── mcp_agent_buyer.py     # Legacy BuyerAgent (procurement, port 8001)
-│       │   │   ├── mcp_agent_store.py     # Legacy StoreAgent (inventory, port 8002)
+│       │   │   ├── ebs_auth_connector.py   # EBSAuthConnector (auth/session, port 8101)
 │       │   │   └── transformer.py         # OracleEBSTransformer
 │       │   ├── mcp_sap/           # SAP MCP Client
 │       │   ├── mcp_odoo/          # Odoo MCP Client

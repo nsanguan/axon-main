@@ -90,7 +90,7 @@ src/axon/
 │   ├── base.py              # BaseMCPConnector (CB, retry, cache, dual transport)
 │   ├── circuit_breaker.py   # Per-server resilience
 │   ├── registry.py          # ConnectorFactory + ConnectorRegistry
-│   ├── mcp_oracle_ebs/      # 9 domain + 3 legacy EBS connectors
+│   ├── mcp_oracle_ebs/      # 10 domain + 1 auth EBS connectors
 │   ├── mcp_llmwiki/         # EraOwl-LLMWiki Policy Server client
 │   ├── mcp_sap/             # SAP connector
 │   └── mcp_odoo/            # Odoo connector
@@ -155,7 +155,17 @@ You are the **Axon ASCP Orchestrator**. Your sole mission is to resolve supply c
 
 ```
 MCP Servers (data sources)
-├── Oracle EBS MCP     → inventory, WIP, orders, suppliers, costs
+├── EBS MCP Agent (10 domain + 1 auth) → inventory, WIP, orders, suppliers, costs
+│   ├── ebs-auth (:8101)    → session management, RBAC
+│   ├── ebs-demand (:8102)  → sales orders, forecasts, ATP
+│   ├── ebs-supply (:8103)  → inventory, suppliers, costs, POs, PRs
+│   ├── ebs-production (:8104) → WIP, BOM, capacity, routing
+│   ├── ebs-logistics (:8105)  → shipments, carriers, transit
+│   ├── ebs-quality (:8106)    → inspection plans, defect history
+│   ├── ebs-asset (:8107)      → asset health, maintenance, downtime
+│   ├── ebs-finance (:8108)    → budget, GL, profitability
+│   ├── ebs-engineering (:8109)→ ECOs, BOM
+│   └── ebs-warehouse (:8111)  → warehouse management
 ├── External RAG MCP   → SOPs, compliance, policies, regulations
 └── Agent MCP Servers  → 3 groups, 10 domain agents
     ├── agent-commercial (:8101)  → Sales, Procurement, Finance
@@ -175,9 +185,9 @@ Step 1 — TRIGGER ANALYSIS
 
 Step 2 — IMPACT ASSESSMENT
   Call MCP tools to gather current state:
-    - Inventory levels → mcp_agent_store.get_inventory_levels
-    - WIP jobs → oracle_ebs.list_wip_jobs
-    - Sales orders → mcp_agent_store.get_sales_orders
+    - Inventory levels → ebs_supply.get_inventory_levels
+    - WIP jobs → ebs_production.list_wip_jobs
+    - Sales orders → ebs_demand.get_sales_orders
     - SOP/policy → external_rag.get_sop
   Calculate: revenue at risk, production blocked, SLA exposure.
   Identify VIP orders (priority > 80).
@@ -219,10 +229,11 @@ Step 5 — EXECUTION & WRITE-BACK
 ### MCP Tool Calling Rules
 
 1. **Always use the correct MCP server** — tools are routed by server:
-   - Inventory/sales/shipments → `mcp_agent_store`
-   - Suppliers/costs/POs → `mcp_agent_buyer`
-   - WIP/BOM/capacity → `oracle_ebs`
-   - SOPs/compliance → `external_rag`
+   - Inventory/sales → `ebs_demand` or `ebs_supply`
+   - Suppliers/costs/POs → `ebs_supply`
+   - WIP/BOM/capacity → `ebs_production`
+   - Shipments/carriers → `ebs_logistics`
+   - SOPs/compliance → `llmwiki`
 
 2. **Every MCP call** must include a `correlation_id` (use the orchestration run ID).
 
@@ -268,7 +279,7 @@ Step 5 — EXECUTION & WRITE-BACK
 - The Supervisor is implemented as LangGraph conditional edges, not as a separate agent.
 
 **Draft-Only Mandate:**
-- Manager agents (BuyerAgent, ProcurementAgent) use `draft_*` tools only.
+- Manager agents (ProcurementAgent, WarehouseAgent) use `draft_*` tools only.
 - Only humans can call `submit_*` or `execute_*` tools.
 - This ensures AI remains a recommender, not a final financial authority.
 
@@ -292,7 +303,7 @@ Every disruption response must contain these three sections:
 **2. MCP Tools Called (ordered)**
 | # | Tool | Server | Purpose | Response Summary |
 |---|------|--------|---------|------------------|
-| 1 | `get_inventory_levels` | `mcp_agent_store` | Check on-hand buffer | 2,000 units available |
+| 1 | `get_inventory_levels` | `ebs_supply` | Check on-hand buffer | 2,000 units available |
 
 **3. Final Decision Table**
 ```

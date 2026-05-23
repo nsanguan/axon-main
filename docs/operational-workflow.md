@@ -131,7 +131,7 @@ RETRIEVE → FETCH → TRANSFORM → REASON → NEGOTIATE → APPROVE → LEARN 
 **Actions**:
 1. For each raw MCPToolOutput dict, reconstruct the typed `MCPToolOutput` object
 2. Route to correct transformer via `can_handle()`:
-   - `OracleEBSTransformer` — for oracle_ebs-sourced data
+    - `OracleEBSTransformer` — for EBS-sourced data
    - `SAPTransformer` — for SAP-sourced data
    - `OdooTransformer` — for Odoo-sourced data
 3. Each transformer maps to `Demand` or `Supply` Pydantic models
